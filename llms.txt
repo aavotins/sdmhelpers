@@ -1,0 +1,109 @@
+# sdmhelpers
+
+`sdmhelpers` provides helper functions for species distribution
+modelling with `maxnet` workflows, extending target-group aproach with
+phenological weighting, temporal overlap estimation, and raster-based
+kernel density estimation. Furthermore this package includes
+functionality for independent spatial-fold selection and model
+evaluation with validation TSS.
+
+`sdmhelpers` was developed in project “HiQBioDiv: High-resolution
+quantification of biodiversity for conservation and management” funded
+by the Latvian Council of Science (Ref. No. VPP-VARAM-DABA-2024/1-0002).
+
+## Installation
+
+You can install the development version of `sdmhelpers` from GitHub
+with:
+
+``` r
+
+# install.packages("pak")
+pak::pak("aavotins/sdmhelpers")
+```
+
+Alternatively:
+
+``` r
+
+# install.packages("remotes")
+remotes::install_github("aavotins/sdmhelpers")
+```
+
+## Available functions
+
+The package currently includes:
+
+- [`doy_kde_weights()`](https://aavotins.github.io/sdmhelpers/reference/doy_kde_weights.md)
+  for seasonal phenological weights calculated for day of inventory or
+  trapping as compared to species (registration) activity;
+
+- [`torus_overlap_many()`](https://aavotins.github.io/sdmhelpers/reference/torus_overlap_many.md)
+  for seasonal and diel overlap between reference species and possibly
+  many other species;
+
+- [`select_folds_by_quota()`](https://aavotins.github.io/sdmhelpers/reference/select_folds_by_quota.md)
+  for selecting presences as complete fold groups;
+
+- [`select_joint_folds()`](https://aavotins.github.io/sdmhelpers/reference/select_joint_folds.md)
+  for coordinated presence and background selection as complete fold
+  groups;
+
+- [`max_tss()`](https://aavotins.github.io/sdmhelpers/reference/max_tss.md)
+  for finding the maximum true skill statistic;
+
+- [`tss_user_eval()`](https://aavotins.github.io/sdmhelpers/reference/tss_user_eval.md)
+  for use with ENMeval user-defined evaluation;
+
+- [`sfKDEterraff()`](https://aavotins.github.io/sdmhelpers/reference/sfKDEterraff.md)
+  for fast raster-based Gaussian kernel density estimation, used to
+  create bias layer, based on (seasonally) weighted or unweighted
+  locations.
+
+## Example
+
+``` r
+
+library(sdmhelpers)
+
+max_tss(
+  p_pos = c(0.71, 0.82, 0.91),
+  p_neg = c(0.12, 0.23, 0.34)
+)
+```
+
+# Package index
+
+## Phenology and temporal overlap
+
+- [`doy_kde_weights()`](https://aavotins.github.io/sdmhelpers/reference/doy_kde_weights.md)
+  : Calculate Day-of-Year Phenology Weights Using Circular Kernel
+  Density
+- [`torus_overlap_many()`](https://aavotins.github.io/sdmhelpers/reference/torus_overlap_many.md)
+  : Estimate Seasonal and Daily Activity Overlap on a Torus
+
+## Spatial fold selection
+
+- [`select_folds_by_quota()`](https://aavotins.github.io/sdmhelpers/reference/select_folds_by_quota.md)
+  : Select Complete Fold Groups to Approximate a Target Sample
+  Proportion
+- [`select_joint_folds()`](https://aavotins.github.io/sdmhelpers/reference/select_joint_folds.md)
+  : Select joint presence and background folds for independent testing
+
+## Model evaluation
+
+- [`max_tss()`](https://aavotins.github.io/sdmhelpers/reference/max_tss.md)
+  : Calculate the Maximum True Skill Statistic
+- [`tss_user_eval()`](https://aavotins.github.io/sdmhelpers/reference/tss_user_eval.md)
+  : Calculate TSS Statistics During ENMeval Evaluation
+
+## Spatial kernel density estimation
+
+- [`sfKDEterraff()`](https://aavotins.github.io/sdmhelpers/reference/sfKDEterraff.md)
+  : Fast Gaussian KDE from sf POINT geometries
+
+# Articles
+
+### All vignettes
+
+- [introduction](https://aavotins.github.io/sdmhelpers/articles/introduction.md):
