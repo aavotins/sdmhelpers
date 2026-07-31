@@ -56,29 +56,24 @@ list with the following components:
 \item \code{selected_fold_ids}: A character vector containing the identifiers of the selected fold
 groups. If missing values are included and selected, they are represented
 by \code{"<NA>"}.
-\itemize{
 \item \code{selected_idx}: A logical vector with the same length as \code{folds}. Values are \code{TRUE} for
 rows belonging to selected fold groups and \code{FALSE} otherwise.
 \item \code{summary}: A list containing:
-\itemize{
-\item \code{n_rows_total}: Number of rows included in the selection problem. Missing fold
-identifiers are omitted when \code{include_na = FALSE}.
+\item \code{n_rows_total}: Number of rows included in the selection problem. Missing
+fold identifiers are omitted when \code{include_na = FALSE}.
 \item \code{n_rows_selected}: Number of rows belonging to the selected folds.
 \item \code{prop_selected}: Proportion of included rows belonging to the selected folds.
 \item \code{bounds}: Requested lower and upper proportional bounds.
 \item \code{row_bounds}: Integer lower and upper bounds used during selection.
 \item \code{target_prop}: Requested target proportion.
 \item \code{target_n}: Target number of selected rows after rounding.
-\item \code{within_bounds}: Logical value indicating whether the returned solution lies within
-the requested integer bounds.
-\item \code{exact_target}: Logical value indicating whether the selected row count equals
-\code{target_n}.
+\item \code{within_bounds}: Logical value indicating whether the returned solution
+lies within the requested integer bounds.
+\item \code{exact_target}: Logical value indicating whether the selected row count equals \code{target_n}.
 \item \code{n_groups}: Total number of fold groups considered.
 \item \code{n_groups_selected}: Number of fold groups selected.
 \item \code{iterations_attempted}: Number of randomized attempts performed.
 \item \code{best_iteration}: Attempt on which the best returned solution was first found.
-}
-}
 }
 }
 \description{

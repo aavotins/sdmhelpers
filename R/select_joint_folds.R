@@ -174,8 +174,11 @@
 #' training records:
 #'
 #' `pres_test  <- pres_data[result$pres_selected_idx, ]`
+#'
 #' `pres_train <- pres_data[!result$pres_selected_idx, ]`
+#'
 #' `bg_test    <- bg_data[result$bg_selected_idx, ]`
+#'
 #' `bg_train   <- bg_data[!result$bg_selected_idx, ]`
 #'
 #' @seealso

@@ -1,0 +1,34 @@
+url: https://aavotins.github.io/sdmhelpers/
+template:
+  bootstrap: 5
+  math-rendering: mathjax
+home:
+  title: sdmhelpers
+  description: |
+    Helper functions for species distribution modelling workflows.
+navbar:
+  structure:
+    left:
+    - intro
+    - reference
+    - articles
+    - news
+    right:
+    - search
+    - github
+reference:
+- title: Phenology and temporal overlap
+  contents:
+  - doy_kde_weights
+  - torus_overlap_many
+- title: Spatial fold selection
+  contents:
+  - select_folds_by_quota
+  - select_joint_folds
+- title: Model evaluation
+  contents:
+  - max_tss
+  - tss_user_eval
+- title: Spatial kernel density estimation
+  contents: sfKDEterraff
+

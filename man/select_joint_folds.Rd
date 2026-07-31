@@ -159,8 +159,11 @@ The returned logical vectors can be used directly to separate testing and
 training records:
 
 \code{pres_test  <- pres_data[result$pres_selected_idx, ]}
+
 \code{pres_train <- pres_data[!result$pres_selected_idx, ]}
+
 \code{bg_test    <- bg_data[result$bg_selected_idx, ]}
+
 \code{bg_train   <- bg_data[!result$bg_selected_idx, ]}
 }
 \section{Interpretation of missing fold IDs}{

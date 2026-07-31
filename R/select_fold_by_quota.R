@@ -68,39 +68,38 @@
 #'     groups. If missing values are included and selected, they are represented
 #'     by `"<NA>"`.
 #'
-#'   - `selected_idx`: A logical vector with the same length as `folds`. Values are `TRUE` for
+#' - `selected_idx`: A logical vector with the same length as `folds`. Values are `TRUE` for
 #'     rows belonging to selected fold groups and `FALSE` otherwise.
 #'
-#'   - `summary`: A list containing:
+#' - `summary`: A list containing:
 #'
-#'     - `n_rows_total`: Number of rows included in the selection problem. Missing fold
-#'         identifiers are omitted when `include_na = FALSE`.
+#'  - `n_rows_total`: Number of rows included in the selection problem. Missing
+#'  fold identifiers are omitted when `include_na = FALSE`.
 #'
-#'      - `n_rows_selected`: Number of rows belonging to the selected folds.
+#'  - `n_rows_selected`: Number of rows belonging to the selected folds.
 #'
-#'      - `prop_selected`: Proportion of included rows belonging to the selected folds.
+#'  - `prop_selected`: Proportion of included rows belonging to the selected folds.
 #'
-#'      - `bounds`: Requested lower and upper proportional bounds.
+#'  - `bounds`: Requested lower and upper proportional bounds.
 #'
-#'      - `row_bounds`: Integer lower and upper bounds used during selection.
+#'  - `row_bounds`: Integer lower and upper bounds used during selection.
 #'
-#'      - `target_prop`: Requested target proportion.
+#'  - `target_prop`: Requested target proportion.
 #'
-#'      - `target_n`: Target number of selected rows after rounding.
+#'  - `target_n`: Target number of selected rows after rounding.
 #'
-#'      - `within_bounds`: Logical value indicating whether the returned solution lies within
-#'         the requested integer bounds.
+#'  - `within_bounds`: Logical value indicating whether the returned solution
+#'  lies within the requested integer bounds.
 #'
-#'      - `exact_target`: Logical value indicating whether the selected row count equals
-#'         `target_n`.
+#'  - `exact_target`: Logical value indicating whether the selected row count equals `target_n`.
 #'
-#'      - `n_groups`: Total number of fold groups considered.
+#'  - `n_groups`: Total number of fold groups considered.
 #'
-#'      - `n_groups_selected`: Number of fold groups selected.
+#'  - `n_groups_selected`: Number of fold groups selected.
 #'
-#'      - `iterations_attempted`: Number of randomized attempts performed.
+#'  - `iterations_attempted`: Number of randomized attempts performed.
 #'
-#'      - `best_iteration`: Attempt on which the best returned solution was first found.
+#'  - `best_iteration`: Attempt on which the best returned solution was first found.
 #'
 #' @details
 #' The row-count constraints are calculated as:

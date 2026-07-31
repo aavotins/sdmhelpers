@@ -50,11 +50,13 @@ evaluation points used for the estimated density curve. When \code{NULL},
 Increasing \code{n} produces a more finely resolved density curve but does not
 add information beyond that contained in the input dates.}
 
-\item{eps}{A single numeric value in the interval \eqn{[0, 0.5)}. Used only
-when \code{scale = "percentile_A"}. If greater than zero, percentile weights are
-restricted to the interval \eqn{[\code{eps}, 1-\code{eps}]}. This can
-prevent exact zero and one values before transformations such as the
-logit. Set \code{eps = 0} to disable clamping.}
+\item{eps}{A single numeric value in the interval
+\eqn{[0,\,0.5)}.
+Used only when \code{scale = "percentile_A"}.
+If \code{eps > 0}, percentile weights are clamped between
+\code{eps} and \code{1 - eps}.
+This prevents exact zero and one values before
+transformations such as the logit.}
 }
 \value{
 A named list containing:
@@ -115,12 +117,12 @@ Day of year is calculated as the zero-based \code{yday} component returned by
 in a non-leap year or day 366 in a leap year.
 
 To approximate a circular density, the reference day-of-year vector
-\eqn{A} is expanded to:
+\code{A} is expanded to:
 
-\deqn{(A - D,\ A,\ A + D),}
+\deqn{(A - D,\; A,\; A + D)}
 
-where \eqn{D} is \code{n_days}. A conventional one-dimensional kernel density is
-then estimated over the interval from day 1 to day \eqn{D}. Repeating the
+where \code{D} is \code{n_days}. A conventional one-dimensional kernel density is
+then estimated over the interval from day 1 to day \code{D}. Repeating the
 observations on both sides allows observations near the beginning of the
 year to influence the density near the end of the year, and vice versa.
 
@@ -137,7 +139,7 @@ With \code{"minmax_A"} scaling, weights are calculated as:
 
 \deqn{
 w_i = \frac{f(B_i) - \min(f)}
-           {\max(f) - \min(f)},
+           {\max(f) - \min(f)}
 }
 
 where \eqn{f(B_i)} is the reference-density value at the day of year of the
@@ -149,10 +151,11 @@ the estimated reference curve that are less than or equal to the
 density-at-date value:
 
 \deqn{
-w_i = \frac{1}{m}\sum_{j=1}^{m} I(f_j \leq f(B_i)),
+w_i = \frac{1}{m}\sum_{j=1}^{m} I(f_j \leq f(B_i))
 }
 
-where \eqn{m} is the number of density-grid points.
+where \eqn{m} is the number of density-grid points and
+\eqn{\mathbf{1}\{\cdot\}} is the indicator function.
 
 This percentile is calculated over grid points rather than over the original
 observations in \code{A_dates}. It therefore describes the relative position of

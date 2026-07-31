@@ -68,11 +68,13 @@
 #'   Increasing `n` produces a more finely resolved density curve but does not
 #'   add information beyond that contained in the input dates.
 #'
-#' @param eps A single numeric value in the interval \eqn{[0, 0.5)}. Used only
-#'   when `scale = "percentile_A"`. If greater than zero, percentile weights are
-#'   restricted to the interval \eqn{[\code{eps}, 1-\code{eps}]}. This can
-#'   prevent exact zero and one values before transformations such as the
-#'   logit. Set `eps = 0` to disable clamping.
+#' @param eps A single numeric value in the interval
+#'   \eqn{[0,\,0.5)}.
+#'   Used only when `scale = "percentile_A"`.
+#'   If `eps > 0`, percentile weights are clamped between
+#'   `eps` and `1 - eps`.
+#'   This prevents exact zero and one values before
+#'   transformations such as the logit.
 #'
 #' @return
 #' A named list containing:
@@ -106,12 +108,12 @@
 #' in a non-leap year or day 366 in a leap year.
 #'
 #' To approximate a circular density, the reference day-of-year vector
-#' \eqn{A} is expanded to:
+#' `A` is expanded to:
 #'
-#' \deqn{(A - D,\ A,\ A + D),}
+#' \deqn{(A - D,\; A,\; A + D)}
 #'
-#' where \eqn{D} is `n_days`. A conventional one-dimensional kernel density is
-#' then estimated over the interval from day 1 to day \eqn{D}. Repeating the
+#' where `D` is `n_days`. A conventional one-dimensional kernel density is
+#' then estimated over the interval from day 1 to day `D`. Repeating the
 #' observations on both sides allows observations near the beginning of the
 #' year to influence the density near the end of the year, and vice versa.
 #'
@@ -128,7 +130,7 @@
 #'
 #' \deqn{
 #' w_i = \frac{f(B_i) - \min(f)}
-#'            {\max(f) - \min(f)},
+#'            {\max(f) - \min(f)}
 #' }
 #'
 #' where \eqn{f(B_i)} is the reference-density value at the day of year of the
@@ -140,10 +142,11 @@
 #' density-at-date value:
 #'
 #' \deqn{
-#' w_i = \frac{1}{m}\sum_{j=1}^{m} I(f_j \leq f(B_i)),
+#' w_i = \frac{1}{m}\sum_{j=1}^{m} I(f_j \leq f(B_i))
 #' }
 #'
-#' where \eqn{m} is the number of density-grid points.
+#' where \eqn{m} is the number of density-grid points and
+#' \eqn{\mathbf{1}\{\cdot\}} is the indicator function.
 #'
 #' This percentile is calculated over grid points rather than over the original
 #' observations in `A_dates`. It therefore describes the relative position of
