@@ -5,6 +5,7 @@
 
 <!-- badges: start -->
 
+[![R-CMD-check](https://github.com/aavotins/sdmhelpers/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/aavotins/sdmhelpers/actions/workflows/R-CMD-check.yaml)
 <!-- badges: end -->
 
 `sdmhelpers` provides helper functions for species distribution
