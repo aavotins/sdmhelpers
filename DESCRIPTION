@@ -1,0 +1,40 @@
+Package: sdmhelpers
+Title: Helper Functions for Species Distribution Modelling
+Version: 0.0.0.9000
+Authors@R:
+    person(
+      given = "Andris",
+      family = "Avotins",
+      role = c("aut", "cre"),
+      email = "avotins.puces@gmail.com",
+      comment = c(ORCID = "0000-0001-8582-0822")
+    )
+Description: Provides helper functions for species distribution modelling
+    workflows, including spatial and temporal kernel density estimation,
+    circular phenology weighting, temporal overlap estimation, spatial-fold
+    selection, and threshold-based model evaluation. The package is intended
+    to support reproducible preparation and evaluation of ecological models. It 
+    was developed in project “HiQBioDiv: High-resolution quantification of 
+    biodiversity for conservation and management” funded by the Latvian Council 
+    of Science (Ref. No. VPP-VARAM-DABA-2024/1-0002).
+License: MIT + file LICENSE
+URL: https://github.com/aavotins/sdmhelpers,
+    https://aavotins.github.io/sdmhelpers/
+BugReports: https://github.com/aavotins/sdmhelpers/issues
+Encoding: UTF-8
+Roxygen: list(markdown = TRUE)
+Depends:
+    R (>= 4.1.0)
+Imports:
+    fastfocal,
+    sf,
+    terra
+Suggests:
+    ENMeval,
+    hms,
+    knitr,
+    rmarkdown,
+    testthat (>= 3.0.0)
+Config/testthat/edition: 3
+Config/roxygen2/version: 8.0.0
+VignetteBuilder: knitr

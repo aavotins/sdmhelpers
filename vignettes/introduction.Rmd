@@ -1,0 +1,35 @@
+---
+title: "introduction"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{introduction}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+```{r setup}
+library(sdmhelpers)
+```
+
+# Introduction to sdmhelpers
+
+## Overview
+
+## Phenological weighting
+
+## Seasonal and diel overlap
+
+## Selecting independent spatial folds
+
+## Evaluating models with TSS
+
+## Creating a spatial KDE surface
+
+## Recommended workflow
