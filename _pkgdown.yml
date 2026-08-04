@@ -30,5 +30,22 @@ reference:
   - max_tss
   - tss_user_eval
 - title: Spatial kernel density estimation
-  contents: sfKDEterraff
-
+  contents:
+  - sfKDEterraff
+- title: Example observations
+  contents:
+  - aves_large
+  - aves_small
+  - amphibia_dates
+  - bryophyta_all
+  - bryophyta_one
+  - habitat_inventories
+- title: Example spatial data
+  contents:
+  - example_presences
+  - example_background
+  - example_grid
+  - example_egv
+  - example_independent_blocks
+  - points100
+  - egv_names
