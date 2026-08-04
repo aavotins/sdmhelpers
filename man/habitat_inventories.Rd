@@ -13,7 +13,7 @@ A data frame or spatial object containing inventory dates covering
 \item \code{forest};
 \item \code{freshwater};
 \item \code{grassland};
-\item \code{heather};
+\item \code{heath};
 \item \code{mire}.
 \item \code{coordX}: X-coordinate of \code{data(example_raster)} cell's centre, matching \code{data(points100)} object (EPSG: 3059).
 \item \code{coordY}: Y-coordinate of \code{data(example_raster)} cell's centre, matching \code{data(points100)} object (EPSG: 3059).

@@ -208,7 +208,7 @@
 #'
 #'  - `grassland`;
 #'
-#'  - `heather`;
+#'  - `heath`;
 #'
 #'  - `mire`.
 #'
