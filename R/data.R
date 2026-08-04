@@ -226,7 +226,6 @@
 "habitat_inventories"
 
 
-
 #' Example 100-m grid points
 #'
 #' Point centres of a reduced 100-m grid used in spatial examples.
