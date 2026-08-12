@@ -247,7 +247,7 @@ res_minmax <- doy_kde_weights(
 )
 
 res_minmax$weights
-#> [1] 0.7268824 0.9993586 0.9430109 0.5202931
+#> [1] 1.528228e-07 9.880280e-01 3.145241e-01 9.943830e-16
 res_minmax$B_doy
 #> [1]  74 135 166 227
 
@@ -260,7 +260,7 @@ res_percentile <- doy_kde_weights(
 )
 
 res_percentile$weights
-#> [1] 0.6520548 0.9863014 0.8465753 0.5123288
+#> [1] 0.6438356 0.9835616 0.8520548 0.5178082
 
 ## Combine dates and calculated weights
 data.frame(
@@ -270,10 +270,10 @@ data.frame(
   phenology_weight = res_percentile$weights
 )
 #>   inventory_date day_of_year  raw_density phenology_weight
-#> 1     2018-03-15          74 0.0009545298        0.6520548
-#> 2     2018-05-15         135 0.0010044470        0.9863014
-#> 3     2018-06-15         166 0.0009941242        0.8465753
-#> 4     2018-08-15         227 0.0009166829        0.5123288
+#> 1     2018-03-15          74 1.146918e-09        0.6438356
+#> 2     2018-05-15         135 7.415037e-03        0.9835616
+#> 3     2018-06-15         166 2.360467e-03        0.8520548
+#> 4     2018-08-15         227 7.462729e-18        0.5178082
 
 ## Use a biologically selected bandwidth of 14 days
 res_bw <- doy_kde_weights(
