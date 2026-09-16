@@ -2,6 +2,8 @@
 
 ## Phenology and temporal overlap
 
+- [`phenology_overlap_weights()`](https://aavotins.github.io/sdmhelpers/reference/phenology_overlap_weights.md)
+  : Calculate phenological overlap weights among species
 - [`doy_kde_weights()`](https://aavotins.github.io/sdmhelpers/reference/doy_kde_weights.md)
   : Calculate Day-of-Year Phenology Weights Using Circular Kernel
   Density

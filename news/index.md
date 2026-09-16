@@ -11,3 +11,8 @@
 - Added fold-selection functions.
 - Added TSS evaluation functions.
 - Added fast raster-based spatial KDE.
+- Added
+  [`phenology_overlap_weights()`](https://aavotins.github.io/sdmhelpers/reference/phenology_overlap_weights.md)
+  to calculate kernel-density overlap between a target species’
+  day-of-year distribution and multiple comparison species, with
+  normalized overlap-based weights.
