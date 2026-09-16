@@ -19,6 +19,7 @@ navbar:
 reference:
 - title: Phenology and temporal overlap
   contents:
+  - phenology_overlap_weights
   - doy_kde_weights
   - torus_overlap_many
 - title: Spatial fold selection
