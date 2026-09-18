@@ -49,6 +49,10 @@ remotes::install_github("aavotins/sdmhelpers")
 
 The package currently includes:
 
+- `phenology_overlap_weights()` calculates kernel-density overlap between the
+day-of-year distribution of a target species and multiple comparison species,
+and converts the overlap estimates into normalized weights;
+
 - `doy_kde_weights()` for seasonal phenological weights calculated for day of 
 inventory or trapping as compared to species (registration) activity;
 
