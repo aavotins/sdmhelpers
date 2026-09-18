@@ -603,6 +603,12 @@ torus_overlap_many <- function(
     comparison_dat$group
   )
 
+
+  # Remove leading and trailing whitespace from comparison-group labels.
+  comparison_dat$group <- trimws(
+    comparison_dat$group
+  )
+
   # ==========================================================================
   # Validate date and time classes
   # ==========================================================================
