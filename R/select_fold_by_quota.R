@@ -408,35 +408,78 @@ select_folds_by_quota <- function(folds,
       }
     }
 
-    # Try adding one group if the solution remains below the lower bound
+    # Score a candidate using the same criterion as the final solution
+    candidate_score <- function(n_selected) {
+      score <- abs(n_selected - target_n)
+
+      if (n_selected < lower) {
+        score <- score + (lower - n_selected)
+      }
+
+      if (n_selected > upper) {
+        score <- score + (n_selected - upper)
+      }
+
+      score
+    }
+
+    # If below the lower bound, compare the current solution with all
+    # solutions obtained by adding one remaining group.
     if (selected_n < lower) {
       remaining <- which(!selected)
 
       if (length(remaining) > 0L) {
-        candidate_totals <- selected_n + sizes[remaining]
+        candidate_totals <- c(
+          selected_n,
+          selected_n + sizes[remaining]
+        )
 
-        fits <- remaining[
-          candidate_totals >= lower &
-            candidate_totals <= upper
-        ]
+        candidate_scores <- vapply(
+          candidate_totals,
+          candidate_score,
+          numeric(1)
+        )
 
-        if (length(fits) > 0L) {
-          totals_that_fit <- selected_n + sizes[fits]
+        best_candidate <- which.min(candidate_scores)
 
-          j <- fits[
-            which.min(abs(totals_that_fit - target_n))
-          ]
-        } else {
-          excess_penalty <- pmax(candidate_totals - upper, 0L)
+        # The first candidate is the unchanged original solution.
+        # All subsequent candidates correspond to adding one remaining group.
+        if (best_candidate > 1L) {
+          j <- remaining[best_candidate - 1L]
 
-          candidate_scores <-
-            abs(candidate_totals - target_n) + excess_penalty
-
-          j <- remaining[which.min(candidate_scores)]
+          selected[j] <- TRUE
+          selected_n <- selected_n + sizes[j]
         }
+      }
+    }
 
-        selected[j] <- TRUE
-        selected_n <- selected_n + sizes[j]
+    # If above the upper bound, compare the current solution with all
+    # solutions obtained by removing one selected group.
+    if (selected_n > upper) {
+      selected_groups <- which(selected)
+
+      if (length(selected_groups) > 0L) {
+        candidate_totals <- c(
+          selected_n,
+          selected_n - sizes[selected_groups]
+        )
+
+        candidate_scores <- vapply(
+          candidate_totals,
+          candidate_score,
+          numeric(1)
+        )
+
+        best_candidate <- which.min(candidate_scores)
+
+        # The first candidate is the unchanged current solution.
+        # All subsequent candidates correspond to removing one selected group.
+        if (best_candidate > 1L) {
+          j <- selected_groups[best_candidate - 1L]
+
+          selected[j] <- FALSE
+          selected_n <- selected_n - sizes[j]
+        }
       }
     }
 

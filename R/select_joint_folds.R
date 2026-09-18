@@ -281,6 +281,7 @@ select_joint_folds <- function(
     seed = NULL,
     print_report = TRUE
 ) {
+
   # Input validation --------------------------------------------------------
 
   if (!is.atomic(pres_folds) || is.list(pres_folds)) {
@@ -329,6 +330,16 @@ select_joint_folds <- function(
 
   validate_bounds(pres_bounds, "pres_bounds")
   validate_bounds(bg_bounds, "bg_bounds")
+
+  if (
+    target_prop < pres_bounds[1L] ||
+    target_prop > pres_bounds[2L]
+  ) {
+    stop(
+      "`target_prop` must lie within the interval specified by `pres_bounds`.",
+      call. = FALSE
+    )
+  }
 
   if (
     !is.numeric(max_tries) ||
@@ -539,7 +550,10 @@ select_joint_folds <- function(
           sumB + b_add
         )
 
-        if (proposed_score <= current_score || sumP < lower_p) {
+        if (
+          proposed_score <= current_score ||
+          (sumP < lower_p && p_add > 0L)
+        ) {
           sel[j] <- TRUE
           sumP <- sumP + p_add
           sumB <- sumB + b_add
@@ -548,9 +562,9 @@ select_joint_folds <- function(
     }
 
     # If the presence lower bound has not been reached, add the remaining
-    # fold that gives the smallest resulting score.
+    # presence-containing fold that gives the smallest resulting score.
     if (sumP < lower_p) {
-      remaining <- which(!sel)
+      remaining <- which(!sel & p_sizes > 0L)
 
       if (length(remaining) > 0L) {
         candidate_scores <- vapply(
@@ -614,10 +628,13 @@ select_joint_folds <- function(
         best$sumB <= upper_b
     )
 
-    prop_ok <- abs(
-      best$sumB / Nb_total -
-        best$sumP / Np_total
-    ) < tolerance
+    prop_ok <- (
+      bg_match_weight == 0 ||
+        abs(
+          best$sumB / Nb_total -
+            best$sumP / Np_total
+        ) < tolerance
+    )
 
     if (pres_ok && bg_ok && prop_ok) {
       break
@@ -721,7 +738,7 @@ select_joint_folds <- function(
     ))
 
     cat(sprintf(
-      "Iterations used: %d | Final score: %.3f\n",
+      "Best solution found at iteration: %d | Final score: %.3f\n",
       out$summary$iterations,
       out$summary$score
     ))

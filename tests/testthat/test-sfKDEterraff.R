@@ -90,22 +90,46 @@ test_that("sfKDEterraff validates geometry, sigma, weights, and normalization", 
   x <- make_kde_fixture()
   polygon <- sf::st_as_sf(sf::st_as_sfc(sf::st_bbox(x$points)))
 
-  expect_error(sfKDEterraff(polygon, sigma = 15, ref = x$ref), "POINT")
-  expect_error(sfKDEterraff(x$points, sigma = 0, ref = x$ref), "sigma")
   expect_error(
-    sfKDEterraff(x$points, weight_field = "missing", sigma = 15, ref = x$ref),
+    sfKDEterraff(polygon, sigma = 15, ref = x$ref),
+    "POINT"
+  )
+
+  expect_error(
+    sfKDEterraff(x$points, sigma = 0, ref = x$ref),
+    "sigma"
+  )
+
+  expect_error(
+    sfKDEterraff(
+      x$points,
+      weight_field = "missing",
+      sigma = 15,
+      ref = x$ref
+    ),
     "weight_field"
   )
 
   bad_weights <- x$points
   bad_weights$weight[1] <- NA_real_
+
   expect_error(
-    sfKDEterraff(bad_weights, weight_field = "weight", sigma = 15, ref = x$ref),
-    "weights"
+    sfKDEterraff(
+      bad_weights,
+      weight_field = "weight",
+      sigma = 15,
+      ref = x$ref
+    ),
+    "Weights must be finite numeric"
   )
 
   expect_error(
-    sfKDEterraff(x$points, sigma = 15, ref = x$ref, normalize = "bad"),
+    sfKDEterraff(
+      x$points,
+      sigma = 15,
+      ref = x$ref,
+      normalize = "bad"
+    ),
     "arg"
   )
 })
