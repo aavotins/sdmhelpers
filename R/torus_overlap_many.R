@@ -560,17 +560,16 @@ torus_overlap_many <- function(
     length(min_n) != 1L ||
     is.na(min_n) ||
     !is.finite(min_n) ||
-    min_n < 2
+    min_n < 2 ||
+    min_n != floor(min_n)
   ) {
     stop(
-      "`min_n` must be one finite number of at least 2.",
+      "`min_n` must be an integer of at least 2.",
       call. = FALSE
     )
   }
 
-  min_n <- as.integer(
-    min_n
-  )
+  min_n <- as.integer(min_n)
 
   if (
     !is.logical(return_density) ||
@@ -889,28 +888,25 @@ torus_overlap_many <- function(
   # ==========================================================================
   # Convert bandwidths to von Mises concentration parameters
   # ==========================================================================
-
-  seasonal_sd_radians <- (
+  # Convert bandwidths from days/hours to angular bandwidths in radians.
+  # The von Mises concentration parameter is then parameterized as
+  # kappa = 1 / h^2, where h is the angular bandwidth. This corresponds
+  # to the local Gaussian approximation for concentrated von Mises kernels;
+  # h is not an exact circular standard deviation.
+  seasonal_bw_radians <- (
     2 * pi *
       season_bw_days /
       common_year_days
   )
 
-  daily_sd_radians <- (
+  daily_bw_radians <- (
     2 * pi *
       daily_bw_hours /
       24
   )
 
-  season_kappa <- (
-    1 /
-      seasonal_sd_radians^2
-  )
-
-  daily_kappa <- (
-    1 /
-      daily_sd_radians^2
-  )
+  season_kappa <- 1 / seasonal_bw_radians^2
+  daily_kappa <- 1 / daily_bw_radians^2
 
   # ==========================================================================
   # Numerically stable von Mises kernel

@@ -284,8 +284,13 @@ doy_kde_weights <- function(
 
   A_dates <- as.Date(A_dates)
   B_dates <- as.Date(B_dates)
-  if (anyNA(A_dates)) stop("`A_dates` contains NA after coercion to Date.")
-  if (anyNA(B_dates)) stop("`B_dates` contains NA after coercion to Date.")
+
+  if (anyNA(A_dates)) {
+    stop("`A_dates` contains NA after coercion to Date.")
+  }
+  if (anyNA(B_dates)) {
+    stop("`B_dates` contains NA after coercion to Date.")
+  }
 
   doy <- function(x) as.POSIXlt(x)$yday + 1L
 
@@ -302,64 +307,149 @@ doy_kde_weights <- function(
     stop("`n_days` must be 365 or 366.")
   }
 
-  if (n_days == 365L &&
-      (any(A_doy == 366L) || any(B_doy == 366L))) {
+  if (
+    n_days == 365L &&
+    (any(A_doy == 366L) || any(B_doy == 366L))
+  ) {
     stop(
       "`n_days = 365` cannot be used when `A_dates` or `B_dates` contains day 366."
     )
   }
 
-  if (is.null(n)) n <- n_days
-  n <- as.integer(n)
-  if (n < 10L) stop("`n` must be >= 10.")
+  if (is.null(n)) {
+    n <- n_days
+  }
 
-  # Wrap-around trick for circular KDE on DoY
-  A_ext <- c(A_doy - n_days, A_doy, A_doy + n_days)
+  n <- as.integer(n)
+
+  if (n < 10L) {
+    stop("`n` must be >= 10.")
+  }
+
+  # Unwrap circular DoY data for automatic bandwidth estimation.
+  #
+  # Standard bandwidth selectors treat the data as linear. Therefore,
+  # observations around the end and beginning of the year (e.g. December
+  # and January) would otherwise appear far apart. The circle is cut at
+  # the largest observed gap, and observations before the cut are shifted
+  # forward by one year.
+  unwrap_doy_for_bw <- function(x, n_days) {
+    x <- sort(as.numeric(x))
+
+    if (length(x) < 2L) {
+      return(x)
+    }
+
+    gaps <- c(
+      diff(x),
+      x[1L] + n_days - x[length(x)]
+    )
+
+    k <- which.max(gaps)
+
+    # If the largest gap is already across the year boundary,
+    # no unwrapping is necessary.
+    if (k == length(x)) {
+      return(x)
+    }
+
+    cut <- x[k + 1L]
+
+    x[x < cut] <- x[x < cut] + n_days
+
+    sort(x)
+  }
+
+  # Data used only for automatic bandwidth estimation
+  A_bw <- unwrap_doy_for_bw(A_doy, n_days)
 
   bw_used <- if (is.character(bw)) {
-    switch(bw,
-           nrd0 = stats::bw.nrd0(A_doy),
-           nrd  = stats::bw.nrd(A_doy),
-           ucv  = stats::bw.ucv(A_doy),
-           bcv  = stats::bw.bcv(A_doy),
-           SJ   = stats::bw.SJ(A_doy),
-           stop("Unknown bandwidth selection method."))
+    switch(
+      bw,
+      nrd0 = stats::bw.nrd0(A_bw),
+      nrd  = stats::bw.nrd(A_bw),
+      ucv  = stats::bw.ucv(A_bw),
+      bcv  = stats::bw.bcv(A_bw),
+      SJ   = stats::bw.SJ(A_bw),
+      stop("Unknown bandwidth selection method.")
+    )
   } else {
     bw
   }
 
-  dens <- stats::density(A_ext,
-                         bw = bw_used,
-                         from = 1,
-                         to = n_days,
-                         n = n)
+  # Wrap-around trick for circular KDE on DoY.
+  #
+  # The replicated observations ensure that density from observations
+  # near one end of the year contributes to density at the other end.
+  A_ext <- c(
+    A_doy - n_days,
+    A_doy,
+    A_doy + n_days
+  )
+
+  dens <- stats::density(
+    A_ext,
+    bw = bw_used,
+    from = 1,
+    to = n_days,
+    n = n
+  )
 
   # Look up A-derived density at DoY(B)
-  w_raw <- stats::approx(dens$x, dens$y, xout = B_doy, rule = 2)$y
+  w_raw <- stats::approx(
+    dens$x,
+    dens$y,
+    xout = B_doy,
+    rule = 2
+  )$y
 
   if (scale == "minmax_A") {
+
     dmin <- min(dens$y)
     dmax <- max(dens$y)
+
     if (!is.finite(dmin) || !is.finite(dmax) || dmax <= dmin) {
-      stop("Density curve has non-finite or degenerate range; cannot min-max scale.")
+      stop(
+        "Density curve has non-finite or degenerate range; cannot min-max scale."
+      )
     }
+
     w <- (w_raw - dmin) / (dmax - dmin)
     w <- pmin(pmax(w, 0), 1)
+
   } else if (scale == "percentile_A") {
+
     d_all <- dens$y
-    w <- vapply(w_raw, function(v) mean(d_all <= v), numeric(1))
-    if (!is.numeric(eps) || length(eps) != 1L || eps < 0 || eps >= 0.5) {
+
+    w <- vapply(
+      w_raw,
+      function(v) mean(d_all <= v),
+      numeric(1)
+    )
+
+    if (
+      !is.numeric(eps) ||
+      length(eps) != 1L ||
+      eps < 0 ||
+      eps >= 0.5
+    ) {
       stop("`eps` must be a single numeric value in [0, 0.5).")
     }
-    if (eps > 0) w <- pmin(pmax(w, eps), 1 - eps)
+
+    if (eps > 0) {
+      w <- pmin(pmax(w, eps), 1 - eps)
+    }
+
   } else {
     stop("Unknown `scale` method.")
   }
 
-  list(weights_raw = w_raw,
-       weights     = w,
-       B_doy       = B_doy,
-       density     = list(x = dens$x, y = dens$y),
-       scale       = scale,
-       n_days      = n_days)
+  list(
+    weights_raw = w_raw,
+    weights     = w,
+    B_doy       = B_doy,
+    density     = list(x = dens$x, y = dens$y),
+    scale       = scale,
+    n_days      = n_days
+  )
 }

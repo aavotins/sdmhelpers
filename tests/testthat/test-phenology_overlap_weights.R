@@ -270,3 +270,26 @@ test_that("custom column names are supported", {
   expect_equal(res$species, c("AAA", "BBB"))
 })
 
+test_that("phenology_overlap_weights works with tibbles", {
+
+  target <- tibble::tibble(
+    CODE = rep("A", 20),
+    DoY = 100:119
+  )
+
+  group <- tibble::tibble(
+    CODE = rep(c("A", "B"), each = 20),
+    DoY = c(100:119, 130:149)
+  )
+
+  expect_no_error(
+    res <- phenology_overlap_weights(
+      target = target,
+      group = group,
+      target_code = "A"
+    )
+  )
+
+  expect_s3_class(res, "data.frame")
+  expect_equal(res$CODE, c("A", "B"))
+})

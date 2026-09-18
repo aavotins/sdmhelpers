@@ -185,11 +185,10 @@ phenology_overlap_weights <- function(
   }
 
   # Select target species
-  target_values <- target[
-    !is.na(target[[target_id]]) &
-      target[[target_id]] == target_code,
-    target_doy
-  ]
+  idx_target <- !is.na(target[[target_id]]) &
+    target[[target_id]] == target_code
+
+  target_values <- target[[target_doy]][idx_target]
 
   # Remove non-finite target values
   if (na_rm) {

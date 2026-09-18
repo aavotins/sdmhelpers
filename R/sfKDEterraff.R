@@ -224,37 +224,116 @@ sfKDEterraff <- function(
     engine = "auto"
 ) {
   normalize <- match.arg(normalize)
-  
+
   # --- checks ---
-  
-  stopifnot(inherits(ref, "SpatRaster"))
-  stopifnot(inherits(x, c("sf", "sfc")))
-  if (unique(as.character(sf::st_geometry_type(x))) != "POINT")
-    stop("`x` must be single-part POINT geometry")
-  if (!is.numeric(sigma) || length(sigma) != 1L || !is.finite(sigma) || sigma <= 0)
-    stop("`sigma` must be a single numeric value > 0")
-  
+
+  if (!inherits(ref, "SpatRaster")) {
+    stop("`ref` must be a terra SpatRaster.", call. = FALSE)
+  }
+
+  if (!inherits(x, c("sf", "sfc"))) {
+    stop("`x` must be an sf or sfc object.", call. = FALSE)
+  }
+
+  geom_types <- as.character(sf::st_geometry_type(x))
+
+  if (length(geom_types) == 0L || any(geom_types != "POINT")) {
+    stop("`x` must contain only single-part POINT geometries.", call. = FALSE)
+  }
+
+  if (
+    !is.numeric(sigma) ||
+    length(sigma) != 1L ||
+    !is.finite(sigma) ||
+    sigma <= 0
+  ) {
+    stop("`sigma` must be a single numeric value > 0.", call. = FALSE)
+  }
+
+  # Check coordinate reference systems.
+  # The function does not reproject either input.
+
+  x_crs <- sf::st_crs(x)
+  ref_crs <- sf::st_crs(terra::crs(ref))
+
+  if (is.na(x_crs)) {
+    stop(
+      "`x` has no coordinate reference system (CRS).",
+      call. = FALSE
+    )
+  }
+
+  if (is.na(ref_crs)) {
+    stop(
+      "`ref` has no coordinate reference system (CRS).",
+      call. = FALSE
+    )
+  }
+
+  if (!isTRUE(x_crs == ref_crs)) {
+    stop(
+      "`x` and `ref` must use the same coordinate reference system (CRS). ",
+      "The function does not reproject the input data.",
+      call. = FALSE
+    )
+  }
+
+  # KDE bandwidth and raster resolution are interpreted in map units,
+  # therefore a projected CRS is required.
+
+  if (isTRUE(sf::st_is_longlat(x))) {
+    stop(
+      "`x` and `ref` must use a projected CRS. ",
+      "Geographic longitude/latitude coordinates are not supported for ",
+      "KDE distance calculations.",
+      call. = FALSE
+    )
+  }
+
   # --- weights ---
-  
+
   if (!is.null(weight_field)) {
-    if (!inherits(x, "sf")) x <- sf::st_as_sf(x)
-    if (!weight_field %in% names(x)) stop("`weight_field` not found in `x`")
+    if (!inherits(x, "sf")) {
+      x <- sf::st_as_sf(x)
+    }
+
+    if (!weight_field %in% names(x)) {
+      stop("`weight_field` not found in `x`.", call. = FALSE)
+    }
+
     w <- x[[weight_field]]
-    if (!is.numeric(w) || anyNA(w) || any(!is.finite(w))) stop("weights must be finite numeric, no NA")
+
+    if (
+      !is.numeric(w) ||
+      anyNA(w) ||
+      any(!is.finite(w))
+    ) {
+      stop(
+        "Weights must be finite numeric values with no NA.",
+        call. = FALSE
+      )
+    }
   } else {
     w <- rep(1, nrow(sf::st_as_sf(x)))
   }
-  
+
   # --- rasterize (sum weights per cell) ---
-  
+
   v <- terra::vect(sf::st_as_sf(x))
   v$w <- w
-  r_counts <- terra::rasterize(v, ref, field = "w", fun = "sum", background = 0)
-  
+
+  r_counts <- terra::rasterize(
+    v,
+    ref,
+    field = "w",
+    fun = "sum",
+    background = 0
+  )
+
   # --- Gaussian smoothing (d = sigma in map units) ---
-  
-  # fastfocal supports gaussian windows and auto-selects FFT for big kernels.
-  
+
+  # fastfocal supports Gaussian windows and auto-selects FFT for big kernels.
+
   r <- fastfocal::fastfocal(
     x      = r_counts,
     d      = sigma,
@@ -262,25 +341,41 @@ sfKDEterraff <- function(
     fun    = "sum",
     engine = engine
   )
-  
-  # mask BEFORE normalization so PDF integrates to 1 over the masked footprint
-  
-  if (mask) r <- terra::mask(r, ref)
-  
+
+  # Mask BEFORE normalization so PDF integrates to 1 over the masked footprint.
+
+  if (mask) {
+    r <- terra::mask(r, ref)
+  }
+
   # --- normalization ---
-  
+
   cell_area <- prod(terra::res(ref))
-  
+
   if (normalize == "pdf") {
-    total_mass <- terra::global(r, "sum", na.rm = TRUE)[1, 1] * cell_area
+    total_mass <- terra::global(
+      r,
+      "sum",
+      na.rm = TRUE
+    )[1, 1] * cell_area
+
     r <- r / total_mass
+
   } else if (normalize == "intensity") {
-    # points per unit area
+
+    # Points per unit area
     r <- r / cell_area
+
   } else if (normalize == "meanG") {
-    m <- terra::global(r, "mean", na.rm = TRUE)[1, 1]
+
+    m <- terra::global(
+      r,
+      "mean",
+      na.rm = TRUE
+    )[1, 1]
+
     r <- r / m
   }
-  
+
   r
 }
