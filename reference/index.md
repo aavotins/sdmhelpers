@@ -27,7 +27,7 @@
 
 ## Spatial kernel density estimation
 
-- [`sfKDEterraff()`](https://aavotins.github.io/sdmhelpers/reference/sfKDEterraff.md)
+- [`kde_surface()`](https://aavotins.github.io/sdmhelpers/reference/kde_surface.md)
   : Fast Gaussian KDE from sf POINT geometries
 
 ## Example observations

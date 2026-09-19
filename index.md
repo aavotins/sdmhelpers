@@ -60,7 +60,7 @@ The package currently includes:
 - [`tss_user_eval()`](https://aavotins.github.io/sdmhelpers/reference/tss_user_eval.md)
   for use with ENMeval user-defined evaluation;
 
-- [`sfKDEterraff()`](https://aavotins.github.io/sdmhelpers/reference/sfKDEterraff.md)
+- [`kde_surface()`](https://aavotins.github.io/sdmhelpers/reference/kde_surface.md)
   for fast raster-based Gaussian kernel density estimation, used to
   create bias layer, based on (seasonally) weighted or unweighted
   locations.
