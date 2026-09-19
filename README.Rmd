@@ -67,7 +67,7 @@ and possibly many other species;
 
 - `tss_user_eval()` for use with ENMeval user-defined evaluation;
 
-- `sfKDEterraff()` for fast raster-based Gaussian kernel density estimation, used to 
+- `kde_surface()` for fast raster-based Gaussian kernel density estimation, used to 
 create bias layer, based on (seasonally) weighted or unweighted locations.
 
 ## Example

@@ -10,3 +10,4 @@
 * Added `phenology_overlap_weights()` to calculate kernel-density overlap
   between a target species' day-of-year distribution and multiple comparison
   species, with normalized overlap-based weights.
+* Renamed `sfKDEterraff()` to `kde_surface()`

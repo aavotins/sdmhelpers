@@ -64,7 +64,7 @@ The package currently includes:
 
 - `tss_user_eval()` for use with ENMeval user-defined evaluation;
 
-- `sfKDEterraff()` for fast raster-based Gaussian kernel density
+- `kde_surface()` for fast raster-based Gaussian kernel density
   estimation, used to create bias layer, based on (seasonally) weighted
   or unweighted locations.
 

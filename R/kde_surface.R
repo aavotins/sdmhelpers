@@ -93,8 +93,7 @@
 #' relative to raster-cell size.
 #'
 #' The function assumes that `x` and `ref` use the same coordinate reference
-#' system. No CRS comparison or coordinate transformation is performed. Points
-#' outside the extent of `ref` do not contribute to the output.
+#' system. Points outside the extent of `ref` do not contribute to the output.
 #'
 #' Cell area is calculated as `prod(terra::res(ref))`. Therefore, `"pdf"` and
 #' `"intensity"` assume a regular projected raster with linear coordinate
@@ -163,7 +162,7 @@
 #' )
 #'
 #' # Unweighted KDE normalized as a probability density
-#' kde_pdf <- sfKDEterraff(
+#' kde_pdf <- kde_surface(
 #'   x = pts,
 #'   sigma = 750,
 #'   ref = ref,
@@ -183,7 +182,7 @@
 #' )[1, 1] * cell_area
 #'
 #' # Weighted KDE standardized to global mean 1
-#' kde_bias <- sfKDEterraff(
+#' kde_bias <- kde_surface(
 #'   x = pts,
 #'   weight_field = "weight",
 #'   sigma = 750,
@@ -201,7 +200,7 @@
 #' terra::plot(kde_bias)
 #'
 #' # Smoothed point intensity per square map unit
-#' kde_intensity <- sfKDEterraff(
+#' kde_intensity <- kde_surface(
 #'   x = pts,
 #'   sigma = 750,
 #'   ref = ref,
@@ -214,7 +213,7 @@
 #' }
 #'
 #' @export
-sfKDEterraff <- function(
+kde_surface <- function(
     x,
     weight_field = NULL,
     sigma,

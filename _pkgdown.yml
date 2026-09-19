@@ -32,7 +32,7 @@ reference:
   - tss_user_eval
 - title: Spatial kernel density estimation
   contents:
-  - sfKDEterraff
+  - kde_surface
 - title: Example observations
   contents:
   - aves_large
