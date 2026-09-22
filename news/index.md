@@ -21,3 +21,4 @@
 - Added
   [`screen_egv_variance()`](https://aavotins.github.io/sdmhelpers/reference/screen_egv_variance.md)
   to select only variable with sufficient variability.
+- Created vignette.
