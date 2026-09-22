@@ -1,11 +1,12 @@
-#' Select joint presence and background folds for independent testing
+#' Select Joint Presence and Background Folds for Independent Testing
 #'
 #' Selects a common set of complete fold IDs for an independent testing
 #' dataset. The selected folds are chosen so that the proportion of selected
-#' presence records is close to a requested target, while the proportions of
-#' both presence and background records remain within user-defined bounds.
+#' presence records is close to the requested target, while favouring fold
+#' combinations for which the proportions of
+#' both presence and background records fall within the user-defined bounds.
 #'
-#' The same fold IDs are selected for both datasets. Consequently, all
+#' The same set of fold IDs are selected for both datasets. Consequently, all
 #' presence and background records belonging to a selected fold are assigned
 #' to the independent testing dataset.
 #'
@@ -17,17 +18,17 @@
 #'   records. Fold identifiers may be numeric, character, factor, or another
 #'   atomic type coercible to character.
 #'
-#' @param target_prop A single numeric value strictly between `0` and `1`.
-#'   The desired proportion of in-scope presence records assigned to the
+#' @param target_prop A single numeric value strictly between `0` and `1`, giving
+#'   the target proportion of in-scope presence records assigned to the
 #'   independent testing dataset. The default is `0.25`.
 #'
-#' @param pres_bounds A numeric vector of length two giving the minimum and
-#'   maximum permitted proportions of presence records in the selected folds.
+#' @param pres_bounds A numeric vector of length two giving the lower and
+#'   upper bounds for the proportions of in-scope presence records in the selected folds.
 #'   Values must lie between `0` and `1`, and the first value must not exceed
 #'   the second. The default is `c(0.20, 0.30)`.
 #'
-#' @param bg_bounds A numeric vector of length two giving the minimum and
-#'   maximum permitted proportions of background records in the selected
+#' @param bg_bounds A numeric vector of length two giving the lower and
+#'   upper bounds for the  proportions of in-scope background records in the selected
 #'   folds. Values must lie between `0` and `1`, and the first value must not
 #'   exceed the second. The default is `c(0.20, 0.30)`.
 #'
@@ -37,8 +38,8 @@
 #'   at the cost of additional computation. The default is `3000`.
 #'
 #' @param bg_match_weight A non-negative numeric value controlling the
-#'   importance of matching the selected background proportion to the
-#'   selected presence proportion. A value of `0` disables proportional
+#'   contribution of the difference between the selected background and presence
+#'   proportions to the objective score. A value of `0` disables proportional
 #'   matching, although `bg_bounds` are still considered. Larger values place
 #'   progressively greater emphasis on making the two selected proportions
 #'   similar. The default is `1`.
@@ -50,14 +51,14 @@
 #'   represented internally and in the returned fold IDs by `"<NA>"`.
 #'   The default is `FALSE`.
 #'
-#' @param seed `NULL` or a single integer-like value passed to
+#' @param seed `NULL` or a single numeric value passed to
 #'   [base::set.seed()]. Supplying a seed makes the randomized search
 #'   reproducible. When `NULL`, the current random-number generator state is
 #'   used.
 #'
-#' @param print_report Logical. If `TRUE`, print a summary of the selected
-#'   folds, sample sizes, proportions, iteration number, and final score.
-#'   The default is `TRUE`.
+#' @param print_report Logical. If `TRUE`, a summary of the selected
+#'   folds, sample sizes, proportions, iteration of the best solution, and
+#'   final score is printed. The default is `TRUE`.
 #'
 #' @details
 #' This function is intended for spatial or otherwise grouped model
@@ -70,9 +71,15 @@
 #' zero in the other dataset.
 #'
 #' The function performs up to `max_tries` randomized greedy searches. For
-#' each randomized ordering, candidate folds are added when doing so improves
-#' the objective score or when additional presence records are needed to reach
-#' the lower presence bound.
+#' each randomized ordering, a candidate fold is considered if adding it would
+#' not exceed the upper presence bound, or if the fold contains no presence
+#' records. The fold is added when doing so does not increase the objective
+#' score, or when the selected presence count is still below the lower presence
+#' bound and the fold contains presence records.
+#'
+#' If the lower presence bound has still not been reached after the greedy
+#' pass, the function evaluates all remaining presence-containing folds and
+#' adds the one that produces the smallest resulting objective score.
 #'
 #' The objective score combines:
 #'
@@ -86,11 +93,12 @@
 #' }
 #'
 #' Because complete folds are indivisible, it may be impossible to satisfy
-#' all requested bounds or to attain `target_prop` exactly. The returned
-#' result is the best solution encountered by the heuristic search; it is not
+#' all requested bounds or to attain the rounded presence target exactly. The returned
+#' result is the lowest-scoring solution encountered by the heuristic search and it is not
 #' guaranteed to be the global optimum.
 #'
-#' Search quality may be improved by increasing `max_tries`, especially when:
+#' Increasing `max_tries` may increase the probability of finding a lower-scoring
+#' solution, especially when:
 #'
 #' \itemize{
 #'   \item the number of folds is large;
@@ -98,6 +106,21 @@
 #'   \item presence and background fold-size distributions differ; or
 #'   \item the requested bounds are narrow.
 #' }
+#'
+#' The randomized search stops before max_tries only when the current best
+#' solution satisfies all of the following conditions:
+#'
+#' \itemize{
+#'   \item the selected presence count is exactly equal to the target presence count
+#'    and lies within `pres_bounds`;
+#'   \item the selected background count lies within `bg_bounds`; and
+#'   \item when `bg_match_weight > 0`, the selected presence and background
+#' proportions are equal within numerical floating-point tolerance.
+#' }
+#'
+#' If `bg_match_weight = 0`, proportional matching is not required for early
+#' stopping. If these conditions are not met, the randomized search continues
+#' until max_tries attempts have been evaluated.
 #'
 #' @section Interpretation of missing fold IDs:
 #'
@@ -110,7 +133,7 @@
 #' record with a missing fold ID in the corresponding dataset.
 #'
 #' To avoid ambiguity when `include_na = TRUE`, the input fold identifiers
-#' should not contain an actual, non-missing fold ID equal to `"<NA>"`.
+#' are not allowed to contain an actual, non-missing fold ID equal to `"<NA>"`.
 #'
 #' @section Random-number generation:
 #'
@@ -166,9 +189,11 @@
 #'         proportional matching criterion.
 #'
 #' @note
-#' The function optimizes the number of records assigned to the independent
-#' dataset, not the number of selected folds. A small number of large folds
-#' can therefore be preferred over a larger number of small folds.
+#' The function optimizes the numbers and proportions of records assigned to
+#' the independent dataset, not the number of selected folds. Consequently,
+#' solutions containing different numbers of folds may receive the same or
+#' similar scores when their selected record counts and proportions are
+#' similar; the number of selected folds is not itself optimized.
 #'
 #' The returned logical vectors can be used directly to separate testing and
 #' training records:

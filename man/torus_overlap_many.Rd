@@ -2,7 +2,7 @@
 % Please edit documentation in R/torus_overlap_many.R
 \name{torus_overlap_many}
 \alias{torus_overlap_many}
-\title{Estimate Seasonal and Daily Activity Overlap on a Torus}
+\title{Estimate Seasonal and Diel Activity Overlap on a Torus}
 \usage{
 torus_overlap_many(
   reference_data,
@@ -23,7 +23,7 @@ torus_overlap_many(
 }
 \arguments{
 \item{reference_data}{A data frame containing the observations defining the
-reference activity distribution. It must contain a date column of class
+reference distribution. It must contain a date column of class
 \link{Date} and a time-of-day column inheriting from class \code{"hms"}.
 
 A grouping column is not required because all valid rows in
@@ -39,7 +39,7 @@ comparison groups. It must contain:
 }
 
 The reference distribution is compared separately with every unique,
-non-missing value in the grouping column.}
+non-missing, non-empty value in the grouping column.}
 
 \item{comparison_group_col}{A character string giving the name of the
 grouping column in \code{comparison_data}.}
@@ -63,26 +63,32 @@ in the returned tables. The value is converted to character. The default
 is \code{"reference"}.}
 
 \item{season_bw_days}{A positive numeric value giving the seasonal kernel
-bandwidth in days. Larger values produce stronger smoothing across the
+bandwidth in days. The bandwidth is converted to an angular value in radians
+and then to the concentration parameter of the seasonal von Misses kernel.
+Larger values produce stronger smoothing across the
 annual cycle. The default is \code{14}.}
 
 \item{daily_bw_hours}{A positive numeric value giving the daily kernel
-bandwidth in hours. Larger values produce stronger smoothing across the
+bandwidth in hours. The bandwidth is converted to an angular value in radians
+and then to the concentration parameter of the seasonal von Misses kernel.
+Larger values produce stronger smoothing across the
 daily cycle. The default is \code{1}.}
 
 \item{date_resolution_days}{A positive numeric value giving the requested
 approximate spacing, in days, between evaluation points on the seasonal
 grid. This controls numerical integration resolution, not kernel
-smoothing. The default is \code{2}.}
+smoothing. The realised spacing may differ slightly because the number of
+grid cells is rounded upward to an integer. The default is \code{2}.}
 
 \item{time_resolution_minutes}{A positive numeric value giving the requested
 approximate spacing, in minutes, between evaluation points on the daily
 grid. This controls numerical integration resolution, not kernel
-smoothing. The default is \code{10}.}
+smoothing. The realised spacing may differ slightly because the number of
+grid cells is rounded upward to an integer. The default is \code{10}.}
 
-\item{min_n}{A numeric value giving the minimum number of valid observations
+\item{min_n}{An integer giving the minimum number of valid observations
 required for density estimation. It is converted to an integer and must
-be at least \code{2}.
+be at least \code{2}. The default is \code{5}.
 
 If the reference dataset contains fewer than \code{min_n} valid observations,
 the function stops with an error. Comparison groups with fewer than
@@ -104,10 +110,10 @@ columns:
 \item comparison: Comparison-group identifier.
 \item n_reference: Number of valid observations in the reference dataset.
 \item n_comparison: Number of valid observations in the comparison group.
-\item overlap: stimated overlap coefficient. This is \code{NA} when the comparison
+\item overlap: Estimated overlap coefficient. This is \code{NA} when the comparison
 group contains fewer than \code{min_n} observations.
 \item status: \code{"OK"} for successfully estimated comparisons or a message
-explaining why an overlap value was not calculated.
+indicating thet the comparison group contained fewer than \code{min_n} observations.
 }
 \item settings: A one-row data frame describing column mappings, bandwidths,
 concentration parameters, requested and realised grid resolutions,
@@ -119,22 +125,22 @@ containing:
 \item reference: Reference identifier.
 \item comparison: Comparison-group identifier.
 \item date_angle: Seasonal grid-cell centre in radians.
-\item time_angle: Daily grid-cell centre in radians.
+\item time_angle: Diel grid-cell centre in radians.
 \item seasonal_position_days: Seasonal grid-cell centre expressed as days from the beginning of a
-common 365.2425-day year.
-\item time_minutes: Daily grid-cell centre expressed as minutes after midnight.
-\item decimal_hour: Daily grid-cell centre expressed as decimal hours after midnight.
-\item reference_density: Estimated reference density at the grid cell.
-\item comparison_density: Estimated comparison density at the grid cell.
+common 365.2425-day year used to construct the evaluation grid.
+\item time_minutes: Diel grid-cell centre expressed as minutes after midnight.
+\item decimal_hour: Diel grid-cell centre expressed as decimal hours after midnight.
+\item reference_density: Normalized estimated reference density at the grid cell.
+\item comparison_density: Normalized estimated comparison density at the grid cell.
 \item shared_density: Pointwise minimum of the reference and comparison densities.
 }
 
-Groups with fewer than \code{min_n} observations are not represented in this
+Groups with fewer than \code{min_n} valid observations are not represented in this
 table.
 }
 }
 \description{
-Estimates the joint seasonal and daily (registration) activity density of a
+Estimates the joint seasonal and diel (registration) activity density of observations in a
 reference dataset and compares it with the corresponding densities of one or
 more groups supplied in a separate comparison dataset.
 
@@ -144,7 +150,7 @@ beginning of the next. The resulting sample space is therefore a
 two-dimensional torus.
 
 A product-kernel density estimator based on two von Mises kernels is used.
-Separate bandwidths are specified for the seasonal and daily dimensions.
+Separate smoothing bandwidths are specified for the seasonal and diel dimensions.
 The overlap coefficient between the reference density and each comparison
 density is calculated by numerical integration of the pointwise minimum of
 the two densities.
@@ -158,21 +164,23 @@ the seasonal angle is
 \deqn{
 \theta_i =
 2\pi
-\frac{d_i - 1}{L_i},
+\frac{d_i - 1}{L_i}
 }
 
 where \eqn{d_i} is the day of year and \eqn{L_i} is the length of the
-observation year: either 365 or 366 days.
+observation year: either 365 or 366 days. January 1 therefore corresponds to
+an angle of zero.
 
 Consequently, leap-year observations are scaled according to the actual
-length of their calendar year.
+length of their calendar year, so that both 365-day and 366-day years are
+mapped onto the same \eqn{2\pi}-periodic seasonal cycle.
 
-Time of day is converted to a daily angle using
+Time of day is converted to a diel angle using
 
 \deqn{
 \phi_i =
 2\pi
-\frac{s_i}{86400},
+\frac{s_i}{86400}
 }
 
 where \eqn{s_i} is the number of seconds since midnight.
@@ -187,33 +195,88 @@ The joint density is estimated using a product of two von Mises kernels:
 \frac{1}{n}
 \sum_{i=1}^{n}
 K_{\kappa_s}(\theta-\theta_i)
-K_{\kappa_t}(\phi-\phi_i),
+K_{\kappa_t}(\phi-\phi_i)
 }
 
-where \eqn{\kappa_s} and \eqn{\kappa_t} are the seasonal and daily
+where \eqn{\kappa_s} and \eqn{\kappa_t} are the seasonal and diel
 concentration parameters.
 
-User-supplied bandwidths are converted from days and hours to approximate
-circular standard deviations in radians. Concentration is then approximated
+User-supplied bandwidths are converted from days and hours to angular bandwidths
+expressed in radians (approximate circular standard deviations in radians).
+Concentration is then approximated
 as
 
 \deqn{
-\kappa \approx \frac{1}{\sigma^2}.
+\kappa_s = \left(\frac{365.2425}{2\pi h_s}\right)^2
 }
 
-This approximation is most appropriate for reasonably concentrated
-kernels. Very large bandwidths correspond to low concentration and should
-be interpreted cautiously.
+\deqn{
+\kappa_t = \left(\frac{24}{2\pi h_t}\right)^2
+}
+
+where \eqn{h_s} is the seasonal bandwidth in days, \eqn{h_t} is the diel bandwidth
+in hours, and \eqn{\kappa_s} and \eqn{\kappa_t} are the corresponding seasonal and diel
+von Mises concentration parameters.
+
+Larger bandwidths produce smaller concentration parameters and therefore broader
+von Mises kernels, resulting in stronger smoothing. Conversely, smaller
+bandwidths produce larger concentration parameters and more concentrated kernels.
 
 The von Mises kernel is evaluated using an exponentially scaled modified
-Bessel function. This avoids numerical overflow for large concentration
-parameters.
+Bessel function. This provides a numerically stable form of the kernel and
+reduces the risk of overflow for large concentration parameters.
+}
+
+\subsection{Density normalization}{
+
+Each product-kernel estimate is theoretically a probability density on the
+two-dimensional torus and therefore integrates to one. However, the density
+is evaluated only at the centres of a finite regular grid, so numerical
+integration of the evaluated density may differ slightly from one.
+
+The integral of the estimated density over the torus is approximated as
+
+\deqn{
+I =
+\sum_{j=1}^{n_{\mathrm{date}}}
+\sum_{k=1}^{n_{\mathrm{time}}}
+\widehat{f}(\theta_j,\phi_k)
+\Delta\theta,\Delta\phi
+}
+
+where \eqn{\Delta\theta = 2\pi/n_{\mathrm{date}}} and
+\eqn{\Delta\phi = 2\pi/n_{\mathrm{time}}} are the angular dimensions of a
+grid cell.
+
+To correct for numerical integration error, the evaluated density is
+normalized as
+
+\deqn{
+\widehat{f}{\mathrm{norm}}(\theta_j,\phi_k) =
+\frac{\widehat{f}(\theta_j,\phi_k)}{I}.
+}
+
+Consequently,
+
+\deqn{
+\sum{j=1}^{n_{\mathrm{date}}}
+\sum_{k=1}^{n_{\mathrm{time}}}
+\widehat{f}_{\mathrm{norm}}(\theta_j,\phi_k)
+\Delta\theta,\Delta\phi = 1.
+}
+
+The reference density and each comparison density are normalized
+independently before their overlap is calculated. This normalization does
+not alter the relative shape of either estimated density; it only ensures
+that both numerically integrated densities represent probability
+distributions on the evaluation grid.
 }
 
 \subsection{Overlap coefficient}{
 
-The overlap coefficient between the reference density
-\eqn{\widehat{f}_r} and comparison density \eqn{\widehat{f}_c} is
+After numerical normalization, the overlap coefficient between the
+normalized reference density \eqn{\widehat{f}_r} and normalized comparison
+density \eqn{\widehat{f}_c} is
 
 \deqn{
 \Delta =
@@ -226,21 +289,23 @@ The overlap coefficient between the reference density
 \,d\theta\,d\phi.
 }
 
-It ranges from zero to one:
+For nomalized densities, it ranges from zero to one:
 \itemize{
-\item \code{0} indicates no estimated overlap;
+\item \code{0} indicates no estimated overlap between the estimated dnsities;
 \item \code{1} indicates identical estimated densities.
 }
 
-The integral is approximated on a regular toroidal grid. Decreasing
+The integral is approximated on a regular toroidal grid by evaluating the densities
+at grid-cell centres and summing the pointwise minima of the two densities
+multiplied by the grid-cell area. Decreasing
 \code{date_resolution_days} or \code{time_resolution_minutes} increases numerical
 resolution but also increases computing time and memory use.
 }
 
 \subsection{Missing and invalid observations}{
 
-Rows are removed from \code{reference_data} when their date or time is missing,
-non-finite, or invalid.
+Rows are removed from \code{reference_data} when their date is missing or when the
+time is missing, non-finite, earlier than 00:00, or equal to or later than 24:00.
 
 Rows are removed from \code{comparison_data} when:
 \itemize{
@@ -255,8 +320,9 @@ Counts of removed observations are included in the returned settings table.
 
 \subsection{Optional density output}{
 
-When \code{return_density = TRUE}, density values are returned in a long data
-frame rather than as matrices. Each valid comparison group contributes
+When \code{return_density = TRUE}, density values are returned in a long-format data
+frame rather than as matrices. Each comparison group containing at least \verb{\eqn{min_n}}
+observations contributes
 
 \deqn{
 n_{\mathrm{date}} \times n_{\mathrm{time}}
@@ -264,7 +330,8 @@ n_{\mathrm{date}} \times n_{\mathrm{time}}
 
 rows.
 
-The reference density is repeated for each comparison group to make each
+The reference density is repeated for each comparison group with at least \verb{\eqn{min_n}}
+observations to make each
 group independently usable for plotting and filtering. This output can
 therefore become large when many groups or a fine evaluation grid are used.
 

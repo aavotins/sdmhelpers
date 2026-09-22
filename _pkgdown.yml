@@ -30,6 +30,9 @@ reference:
   contents:
   - max_tss
   - tss_user_eval
+- title: Variable screening
+  contents:
+  - screen_egv_variance
 - title: Spatial kernel density estimation
   contents:
   - kde_surface

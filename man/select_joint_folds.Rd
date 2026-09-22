@@ -2,7 +2,7 @@
 % Please edit documentation in R/select_joint_folds.R
 \name{select_joint_folds}
 \alias{select_joint_folds}
-\title{Select joint presence and background folds for independent testing}
+\title{Select Joint Presence and Background Folds for Independent Testing}
 \usage{
 select_joint_folds(
   pres_folds,
@@ -26,17 +26,17 @@ atomic type coercible to character.}
 records. Fold identifiers may be numeric, character, factor, or another
 atomic type coercible to character.}
 
-\item{target_prop}{A single numeric value strictly between \code{0} and \code{1}.
-The desired proportion of in-scope presence records assigned to the
+\item{target_prop}{A single numeric value strictly between \code{0} and \code{1}, giving
+the target proportion of in-scope presence records assigned to the
 independent testing dataset. The default is \code{0.25}.}
 
-\item{pres_bounds}{A numeric vector of length two giving the minimum and
-maximum permitted proportions of presence records in the selected folds.
+\item{pres_bounds}{A numeric vector of length two giving the lower and
+upper bounds for the proportions of in-scope presence records in the selected folds.
 Values must lie between \code{0} and \code{1}, and the first value must not exceed
 the second. The default is \code{c(0.20, 0.30)}.}
 
-\item{bg_bounds}{A numeric vector of length two giving the minimum and
-maximum permitted proportions of background records in the selected
+\item{bg_bounds}{A numeric vector of length two giving the lower and
+upper bounds for the  proportions of in-scope background records in the selected
 folds. Values must lie between \code{0} and \code{1}, and the first value must not
 exceed the second. The default is \code{c(0.20, 0.30)}.}
 
@@ -46,8 +46,8 @@ values may improve the selected solution when fold sizes are irregular,
 at the cost of additional computation. The default is \code{3000}.}
 
 \item{bg_match_weight}{A non-negative numeric value controlling the
-importance of matching the selected background proportion to the
-selected presence proportion. A value of \code{0} disables proportional
+contribution of the difference between the selected background and presence
+proportions to the objective score. A value of \code{0} disables proportional
 matching, although \code{bg_bounds} are still considered. Larger values place
 progressively greater emphasis on making the two selected proportions
 similar. The default is \code{1}.}
@@ -59,14 +59,14 @@ corresponding values in the returned row-selection vectors are
 represented internally and in the returned fold IDs by \code{"<NA>"}.
 The default is \code{FALSE}.}
 
-\item{seed}{\code{NULL} or a single integer-like value passed to
+\item{seed}{\code{NULL} or a single numeric value passed to
 \code{\link[base:set.seed]{base::set.seed()}}. Supplying a seed makes the randomized search
 reproducible. When \code{NULL}, the current random-number generator state is
 used.}
 
-\item{print_report}{Logical. If \code{TRUE}, print a summary of the selected
-folds, sample sizes, proportions, iteration number, and final score.
-The default is \code{TRUE}.}
+\item{print_report}{Logical. If \code{TRUE}, a summary of the selected
+folds, sample sizes, proportions, iteration of the best solution, and
+final score is printed. The default is \code{TRUE}.}
 }
 \value{
 Invisibly returns a named list with the following elements:
@@ -103,11 +103,12 @@ proportional matching criterion.
 \description{
 Selects a common set of complete fold IDs for an independent testing
 dataset. The selected folds are chosen so that the proportion of selected
-presence records is close to a requested target, while the proportions of
-both presence and background records remain within user-defined bounds.
+presence records is close to the requested target, while favouring fold
+combinations for which the proportions of
+both presence and background records fall within the user-defined bounds.
 }
 \details{
-The same fold IDs are selected for both datasets. Consequently, all
+The same set of fold IDs are selected for both datasets. Consequently, all
 presence and background records belonging to a selected fold are assigned
 to the independent testing dataset.
 
@@ -121,9 +122,15 @@ candidate folds. A fold that occurs in only one dataset therefore has size
 zero in the other dataset.
 
 The function performs up to \code{max_tries} randomized greedy searches. For
-each randomized ordering, candidate folds are added when doing so improves
-the objective score or when additional presence records are needed to reach
-the lower presence bound.
+each randomized ordering, a candidate fold is considered if adding it would
+not exceed the upper presence bound, or if the fold contains no presence
+records. The fold is added when doing so does not increase the objective
+score, or when the selected presence count is still below the lower presence
+bound and the fold contains presence records.
+
+If the lower presence bound has still not been reached after the greedy
+pass, the function evaluates all remaining presence-containing folds and
+adds the one that produces the smallest resulting objective score.
 
 The objective score combines:
 
@@ -137,11 +144,12 @@ proportions, weighted by \code{bg_match_weight}.
 }
 
 Because complete folds are indivisible, it may be impossible to satisfy
-all requested bounds or to attain \code{target_prop} exactly. The returned
-result is the best solution encountered by the heuristic search; it is not
+all requested bounds or to attain the rounded presence target exactly. The returned
+result is the lowest-scoring solution encountered by the heuristic search and it is not
 guaranteed to be the global optimum.
 
-Search quality may be improved by increasing \code{max_tries}, especially when:
+Increasing \code{max_tries} may increase the probability of finding a lower-scoring
+solution, especially when:
 
 \itemize{
 \item the number of folds is large;
@@ -149,11 +157,28 @@ Search quality may be improved by increasing \code{max_tries}, especially when:
 \item presence and background fold-size distributions differ; or
 \item the requested bounds are narrow.
 }
+
+The randomized search stops before max_tries only when the current best
+solution satisfies all of the following conditions:
+
+\itemize{
+\item the selected presence count is exactly equal to the target presence count
+and lies within \code{pres_bounds};
+\item the selected background count lies within \code{bg_bounds}; and
+\item when \code{bg_match_weight > 0}, the selected presence and background
+proportions are equal within numerical floating-point tolerance.
+}
+
+If \code{bg_match_weight = 0}, proportional matching is not required for early
+stopping. If these conditions are not met, the randomized search continues
+until max_tries attempts have been evaluated.
 }
 \note{
-The function optimizes the number of records assigned to the independent
-dataset, not the number of selected folds. A small number of large folds
-can therefore be preferred over a larger number of small folds.
+The function optimizes the numbers and proportions of records assigned to
+the independent dataset, not the number of selected folds. Consequently,
+solutions containing different numbers of folds may receive the same or
+similar scores when their selected record counts and proportions are
+similar; the number of selected folds is not itself optimized.
 
 The returned logical vectors can be used directly to separate testing and
 training records:
@@ -178,7 +203,7 @@ one common fold named \code{"<NA>"}. Therefore, selecting that fold selects ever
 record with a missing fold ID in the corresponding dataset.
 
 To avoid ambiguity when \code{include_na = TRUE}, the input fold identifiers
-should not contain an actual, non-missing fold ID equal to \code{"<NA>"}.
+are not allowed to contain an actual, non-missing fold ID equal to \code{"<NA>"}.
 }
 
 \section{Random-number generation}{

@@ -20,14 +20,16 @@ knitr::opts_chunk$set(
 [![Lifecycle: experimental](https://img.shields.io/badge/lifecycle-experimental-orange.svg)](https://lifecycle.r-lib.org/articles/stages.html#experimental)
 <!-- badges: end -->
 
-`sdmhelpers` provides helper functions for species distribution modelling with `maxnet`
-workflows, extending target-group aproach with phenological weighting, 
-temporal overlap estimation, and raster-based kernel density estimation. Furthermore 
+`sdmhelpers` provides helper functions to support species distribution modelling 
+(SDM) workflows implemented with `maxnet`. The package extends the target-group 
+approach with phenological weighting, temporal overlap estimation, and 
+raster-based kernel density estimation (KDE). Furthermore, 
 this package includes functionality for independent spatial-fold selection and 
-model evaluation with validation TSS. 
+model evaluation using validation data and the true skill statistic (TSS). 
 
-`sdmhelpers` was developed in project “HiQBioDiv: High-resolution quantification of 
-biodiversity for conservation and management” funded by the Latvian Council of Science (Ref. No. VPP-VARAM-DABA-2024/1-0002).
+`sdmhelpers` was developed as part of the project “HiQBioDiv: High-resolution 
+quantification of biodiversity for conservation and management” funded by the 
+Latvian Council of Science (Ref. No. VPP-VARAM-DABA-2024/1-0002).
 
 ## Installation
 
@@ -66,6 +68,8 @@ and possibly many other species;
 - `max_tss()` for finding the maximum true skill statistic;
 
 - `tss_user_eval()` for use with ENMeval user-defined evaluation;
+
+- `screen_egv_variance()` for use with SDMtune SWD to find variables with low variability;
 
 - `kde_surface()` for fast raster-based Gaussian kernel density estimation, used to 
 create bias layer, based on (seasonally) weighted or unweighted locations.

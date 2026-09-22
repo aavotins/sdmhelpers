@@ -27,16 +27,50 @@ Calculates the maximum True Skill Statistic (TSS) across all unique
 prediction thresholds for presence and background or absence predictions.
 }
 \details{
-The True Skill Statistic is calculated as
-
-\deqn{\mathrm{TSS} = \mathrm{sensitivity} + \mathrm{specificity} - 1.}
-
-At each threshold, predictions greater than or equal to the threshold are
+For a given threshold, predictions greater than or equal to the threshold are
 classified as positive, whereas predictions below the threshold are
 classified as negative.
 
+Sensitivity is the proportion of observed presences classified as positive:
+
+\deqn{
+\mathrm{sensitivity} =
+\frac{\mathrm{TP}}{\mathrm{TP} + \mathrm{FN}},
+}
+
+where TP is the number of presence records with predictions greater than or
+equal to the threshold and FN is the number of presence records with
+predictions below the threshold.
+
+Specificity is calculated from the records supplied in \code{p_neg} as
+
+\deqn{
+\mathrm{specificity} =
+\frac{\mathrm{TN}}{\mathrm{TN} + \mathrm{FP}},
+}
+
+where TN is the number of records in \code{p_neg} with predictions below the
+threshold and FP is the number with predictions greater than or equal to the
+threshold.
+
+When \code{p_neg} contains observed absences, TN and FP have their usual
+classification interpretation. When \code{p_neg} contains background records,
+however, those records are not necessarily true absences. In that case,
+"specificity" should be interpreted operationally as the proportion of
+background records classified as negative rather than as the proportion of
+confirmed absences correctly classified. Consequently, the resulting TSS is
+a presence-background discrimination measure rather than a TSS based on
+independently observed true absences.
+
+The True Skill Statistic is calculated as
+
+\deqn{
+\mathrm{TSS} =
+\mathrm{sensitivity} + \mathrm{specificity} - 1.
+}
+
 Thresholds are evaluated at every unique finite prediction value. Two
-additional classifications are considered:
+additional classifications are also considered:
 
 \itemize{
 \item all records classified as negative; and
@@ -45,21 +79,24 @@ additional classifications are considered:
 
 Both extreme classifications have a TSS of zero.
 
-Non-finite values, including \code{NA}, \code{NaN}, \code{Inf}, and
-\code{-Inf}, are removed separately from \code{p_pos} and \code{p_neg}.
-If no finite values remain in either vector, all returned values are
-\code{NA_real_}.
+Non-finite values, including \code{NA}, \code{NaN}, \code{Inf}, and \code{-Inf}, are removed
+separately from \code{p_pos} and \code{p_neg.} If no finite values remain in either
+vector, all returned values are \code{NA_real_}.
 
-When multiple thresholds produce the same maximum TSS, the highest
-threshold is returned. This corresponds to the most restrictive
-classification among the tied thresholds. One exception occurs when no
-evaluated threshold has a TSS greater than zero: the function returns
-\code{Inf}, representing classification of all records as negative.
+When multiple thresholds produce the same maximum TSS, the highest threshold
+is returned. This corresponds to the most restrictive classification among
+the tied thresholds. One exception occurs when no evaluated threshold has a
+TSS greater than zero: the function returns \code{Inf}, representing
+classification of all records as negative.
 
-TSS is independent of prevalence when sensitivity and specificity are
-calculated from representative presence and negative samples. However,
-results can still depend strongly on the spatial, environmental, and
-sampling properties of the background or absence data.
+TSS is commonly described as being independent of prevalence because
+sensitivity and specificity are calculated conditionally within the
+positive and negative samples. Nevertheless, the value obtained here can
+depend strongly on how \code{p_pos} and especially \code{p_neg} were sampled. This is
+particularly important when \code{p_neg} represents background rather than
+observed absences, because the composition, extent, and sampling design of
+the background data affect the estimated specificity and therefore the
+resulting TSS.
 }
 \examples{
 presence_predictions <- c(0.90, 0.85, 0.75, 0.60, 0.40)

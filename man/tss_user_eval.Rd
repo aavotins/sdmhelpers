@@ -37,7 +37,7 @@ returned as \code{NA_real_}.
 \description{
 A user-defined evaluation function for
 \code{ENMeval::ENMevaluate()} that calculates
-the maximum True Skill Statistic for the training and validation data of
+the maximum True Skill Statistic (TSS) values for the training and validation data of
 each model partition.
 }
 \details{
@@ -54,7 +54,7 @@ ENMeval::ENMevaluate(
 For each cross-validation fold, the function calculates:
 
 \itemize{
-\item validation TSS, threshold, sensitivity, and specificity; and
+\item validation TSS, threshold of the highest TSS, sensitivity, and specificity; and
 \item training TSS.
 }
 
@@ -64,15 +64,15 @@ The validation background follows the setting used by \pkg{ENMeval}:
 \item when \code{other.settings$validation.bg = "full"}, validation
 occurrences are compared with the combined training and validation
 background predictions;
-\item otherwise, validation occurrences are compared only with
-validation-background predictions.
+\item otherwise, validation occurrences are compared only with the
+validation background predictions.
 }
 
-The training statistic always compares training occurrences with training
+The training TSS always compares training occurrences with training
 background predictions.
 
 The maximum TSS threshold is selected separately for the training and
-validation data. Consequently, \code{tss.train} and \code{tss.val} are
+validation data. Consequently, both \code{tss.train} and \code{tss.val} are
 optimistic estimates of performance within their respective datasets
 because each is maximized using the same data on which it is evaluated.
 
