@@ -3,21 +3,56 @@
 This function is intended for creating an independent testing subset
 when observations have already been assigned to spatial, temporal,
 environmental, or other grouped folds. It searches for a subset of
-complete fold groups whose combined number of observations approximates
-`target_prop`.
+complete fold groups whose combined number of observations yields a
+selected proportion close to `target_prop`.
 
 Candidate subsets are generated using repeated random orderings of the
-fold groups. For each ordering, groups are greedily added while their
-cumulative size does not exceed the upper bound. If the resulting subset
-is smaller than the lower bound, one additional group is selected to
-improve the solution.
+fold groups. For each ordering, groups are greedily added whenever doing
+so would not cause the cumulative number of selected rows to exceed the
+integer upper bound. If the resulting subset lies below the lower bound,
+the function evaluates the unchanged subset together with every subset
+obtainable by adding one remaining group. These candidates are scored
+according to their distance from the target row count, with an
+additional penalty for falling outside the requested bounds, and the
+best-scoring candidate is retained.
 
 Because folds are indivisible, an exact match to the target proportion
 may not be possible. The function therefore returns the best solution
-found during at most `max_tries` randomized attempts. In some cases,
-particularly when one or more folds are very large, no combination may
-satisfy `bounds`. The returned summary indicates whether the selected
-solution lies within the requested bounds.
+found during at most `max_tries` randomized attempts, according to the
+scoring rule described below. In some cases, particularly when one or
+more folds are very large, no combination may satisfy `bounds`. The
+returned summary indicates whether the selected solution lies within the
+requested bounds. The procedure is a randomized heuristic rather than
+evaluating all possible combinations of fold groups. Consequently, a
+returned solution outside the bounds does not by itself prove that no
+feasible combination exists.
+
+\#' Candidate solutions are scored according to their absolute deviation
+from the target number of selected rows. Solutions falling outside the
+requested row-count bounds receive an additional penalty equal to their
+distance outside the allowed interval.
+
+Specifically, for a candidate containing n_selected rows, the score is
+
+
+    score = abs(n_selected - target_n)
+
+with an additional penalty of
+
+
+    lower - n_selected
+
+when n_selected \< lower, or
+
+
+    n_selected - upper
+
+when n_selected \> upper.
+
+Lower scores are preferred. Consequently, among solutions within the
+requested bounds, the preferred solution is simply the one closest to
+target_n. Solutions outside the bounds are additionally penalized
+according to how far they lie outside the permitted interval.
 
 Missing fold identifiers are excluded by default. When
 `include_na = TRUE`, all missing identifiers are treated as one
@@ -63,15 +98,16 @@ select_folds_by_quota(
 
   A positive integer giving the maximum number of randomized fold
   orderings to evaluate. The search may stop earlier if it finds a
-  solution containing exactly the target number of rows and lying within
-  `bounds`. The default is `2000`.
+  solution containing exactly the `target_n` and lying within `bounds`.
+  The default is `2000`.
 
 - include_na:
 
   Logical. If `FALSE`, observations with missing fold identifiers are
   excluded from the fold-frequency table and are never selected. If
   `TRUE`, all missing fold identifiers are treated as a single fold
-  group represented by `"<NA>"` in `selected_fold_ids`.
+  group represented by `"<NA>"` in `selected_fold_ids`. The default is
+  `FALSE`.
 
 - seed:
 
@@ -82,8 +118,9 @@ select_folds_by_quota(
 
 - print_report:
 
-  Logical. If `TRUE`, print a summary of the selected solution to the
-  console. The returned object is invisible regardless of this setting.
+  Logical. If `TRUE`, a summary of the selected solution is printed to
+  the console. The returned object is invisible regardless of this
+  setting. The default is `TRUE`.
 
 ## Value
 
@@ -100,36 +137,36 @@ a list with the following components:
 
 - `summary`: A list containing:
 
-- `n_rows_total`: Number of rows included in the selection problem.
-  Missing fold identifiers are omitted when `include_na = FALSE`.
+  - `n_rows_total`: Number of rows included in the selection problem.
+    Missing fold identifiers are omitted when `include_na = FALSE`.
 
-- `n_rows_selected`: Number of rows belonging to the selected folds.
+  - `n_rows_selected`: Number of rows belonging to the selected folds.
 
-- `prop_selected`: Proportion of included rows belonging to the selected
-  folds.
+  - `prop_selected`: Proportion of included rows belonging to the
+    selected folds.
 
-- `bounds`: Requested lower and upper proportional bounds.
+  - `bounds`: Requested lower and upper proportional bounds.
 
-- `row_bounds`: Integer lower and upper bounds used during selection.
+  - `row_bounds`: Integer lower and upper bounds used during selection.
 
-- `target_prop`: Requested target proportion.
+  - `target_prop`: Requested target proportion.
 
-- `target_n`: Target number of selected rows after rounding.
+  - `target_n`: Target number of selected rows after rounding.
 
-- `within_bounds`: Logical value indicating whether the returned
-  solution lies within the requested integer bounds.
+  - `within_bounds`: Logical value indicating whether the returned
+    solution lies within the requested integer bounds.
 
-- `exact_target`: Logical value indicating whether the selected row
-  count equals `target_n`.
+  - `exact_target`: Logical value indicating whether the selected row
+    count equals `target_n`.
 
-- `n_groups`: Total number of fold groups considered.
+  - `n_groups`: Total number of fold groups considered.
 
-- `n_groups_selected`: Number of fold groups selected.
+  - `n_groups_selected`: Number of fold groups selected.
 
-- `iterations_attempted`: Number of randomized attempts performed.
+  - `iterations_attempted`: Number of randomized attempts performed.
 
-- `best_iteration`: Attempt on which the best returned solution was
-  first found.
+  - `best_iteration`: Attempt on which the best returned solution was
+    first found.
 
 ## Details
 
@@ -138,10 +175,16 @@ selected folds is as close as possible to a requested proportion of all
 rows. Fold groups are never split between the selected and unselected
 sets.
 
+Selects complete fold groups so that their combined number of rows is
+close to a target row count derived from the requested sample
+proportion. Fold groups are never split between the selected and
+unselected sets.
+
 The row-count constraints are calculated as:
 
 
     lower   = ceiling(bounds[1] * N)
+    lower   = max(1L, lower)
     upper   = floor(bounds[2] * N)
     target  = round(target_prop * N)
 
@@ -150,9 +193,9 @@ problem.
 
 The procedure is a randomized heuristic rather than an exhaustive
 combinatorial search. Consequently, it does not guarantee the globally
-optimal combination of folds. Increasing `max_tries` can improve the
-probability of finding a good combination when many fold groups are
-available.
+optimal combination of folds. By selecting larger value of `max_tries`
+can increase the probability of finding a lower-scoring (better)
+combination when many fold groups are available.
 
 The same fold identifiers and seed produce the same result under the
 same R version and random-number generator settings. Calling this

@@ -7,10 +7,10 @@
   };
 </script><script src="../deps/jquery-3.6.0/jquery-3.6.0.min.js"></script><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no"><link href="../deps/bootstrap-5.3.8/bootstrap.min.css" rel="stylesheet"><script src="../deps/bootstrap-5.3.8/bootstrap.bundle.min.js"></script><link href="../deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet"><link href="../deps/font-awesome-6.5.2/css/v4-shims.min.css" rel="stylesheet"><script src="../deps/headroom-0.11.0/headroom.min.js"></script><script src="../deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="../deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="../deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="../deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="../deps/search-1.0.0/fuse.min.js"></script><script src="../deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="../pkgdown.js"></script><meta property="og:title" content="Calculate TSS Statistics During ENMeval Evaluation — tss_user_eval"><meta name="description" content="A user-defined evaluation function for
 ENMeval::ENMevaluate() that calculates
-the maximum True Skill Statistic for the training and validation data of
+the maximum True Skill Statistic (TSS) values for the training and validation data of
 each model partition."><meta property="og:description" content="A user-defined evaluation function for
 ENMeval::ENMevaluate() that calculates
-the maximum True Skill Statistic for the training and validation data of
+the maximum True Skill Statistic (TSS) values for the training and validation data of
 each model partition."></head><body>
     <a href="#main" class="visually-hidden-focusable">Skip to contents</a>
 
@@ -52,7 +52,7 @@ each model partition."></head><body>
     <div class="ref-description section level2">
     <p>A user-defined evaluation function for
 <code><a href="https://jamiemkass.github.io/ENMeval/reference/ENMevaluate.html" class="external-link">ENMeval::ENMevaluate()</a></code> that calculates
-the maximum True Skill Statistic for the training and validation data of
+the maximum True Skill Statistic (TSS) values for the training and validation data of
 each model partition.</p>
     </div>
 
@@ -100,18 +100,18 @@ of <code><a href="https://jamiemkass.github.io/ENMeval/reference/ENMevaluate.htm
 <span><span class="op">)</span></span></code></pre></div>
 
 <p>For each cross-validation fold, the function calculates:</p>
-<ul><li><p>validation TSS, threshold, sensitivity, and specificity; and</p></li>
+<ul><li><p>validation TSS, threshold of the highest TSS, sensitivity, and specificity; and</p></li>
 <li><p>training TSS.</p></li>
 </ul><p>The validation background follows the setting used by <span class="pkg">ENMeval</span>:</p>
 <ul><li><p>when <code>other.settings$validation.bg = "full"</code>, validation
 occurrences are compared with the combined training and validation
 background predictions;</p></li>
-<li><p>otherwise, validation occurrences are compared only with
-validation-background predictions.</p></li>
-</ul><p>The training statistic always compares training occurrences with training
+<li><p>otherwise, validation occurrences are compared only with the
+validation background predictions.</p></li>
+</ul><p>The training TSS always compares training occurrences with training
 background predictions.</p>
 <p>The maximum TSS threshold is selected separately for the training and
-validation data. Consequently, <code>tss.train</code> and <code>tss.val</code> are
+validation data. Consequently, both <code>tss.train</code> and <code>tss.val</code> are
 optimistic estimates of performance within their respective datasets
 because each is maximized using the same data on which it is evaluated.</p>
 <p>For an independent assessment of a threshold-based model, a threshold

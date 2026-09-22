@@ -2,8 +2,8 @@
 
 A user-defined evaluation function for
 [`ENMeval::ENMevaluate()`](https://jamiemkass.github.io/ENMeval/reference/ENMevaluate.html)
-that calculates the maximum True Skill Statistic for the training and
-validation data of each model partition.
+that calculates the maximum True Skill Statistic (TSS) values for the
+training and validation data of each model partition.
 
 ## Usage
 
@@ -65,7 +65,8 @@ This function is intended to be supplied to the `user.eval` argument of
 
 For each cross-validation fold, the function calculates:
 
-- validation TSS, threshold, sensitivity, and specificity; and
+- validation TSS, threshold of the highest TSS, sensitivity, and
+  specificity; and
 
 - training TSS.
 
@@ -75,16 +76,16 @@ The validation background follows the setting used by ENMeval:
   are compared with the combined training and validation background
   predictions;
 
-- otherwise, validation occurrences are compared only with
-  validation-background predictions.
+- otherwise, validation occurrences are compared only with the
+  validation background predictions.
 
-The training statistic always compares training occurrences with
-training background predictions.
+The training TSS always compares training occurrences with training
+background predictions.
 
 The maximum TSS threshold is selected separately for the training and
-validation data. Consequently, `tss.train` and `tss.val` are optimistic
-estimates of performance within their respective datasets because each
-is maximized using the same data on which it is evaluated.
+validation data. Consequently, both `tss.train` and `tss.val` are
+optimistic estimates of performance within their respective datasets
+because each is maximized using the same data on which it is evaluated.
 
 For an independent assessment of a threshold-based model, a threshold
 should generally be selected using training data and then applied,

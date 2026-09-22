@@ -17,4 +17,7 @@
   day-of-year distribution and multiple comparison species, with
   normalized overlap-based weights.
 - Renamed `sfKDEterraff()` to
-  [`kde_surface()`](https://aavotins.github.io/sdmhelpers/reference/kde_surface.md)
+  [`kde_surface()`](https://aavotins.github.io/sdmhelpers/reference/kde_surface.md).
+- Added
+  [`screen_egv_variance()`](https://aavotins.github.io/sdmhelpers/reference/screen_egv_variance.md)
+  to select only variable with sufficient variability.

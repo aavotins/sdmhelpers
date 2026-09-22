@@ -65,8 +65,8 @@
 </h1></div>
 <!-- badges: start -->
 
-<p><code>sdmhelpers</code> provides helper functions for species distribution modelling with <code>maxnet</code> workflows, extending target-group aproach with phenological weighting, temporal overlap estimation, and raster-based kernel density estimation. Furthermore this package includes functionality for independent spatial-fold selection and model evaluation with validation TSS.</p>
-<p><code>sdmhelpers</code> was developed in project “HiQBioDiv: High-resolution quantification of biodiversity for conservation and management” funded by the Latvian Council of Science (Ref. No. VPP-VARAM-DABA-2024/1-0002).</p>
+<p><code>sdmhelpers</code> provides helper functions to support species distribution modelling (SDM) workflows implemented with <code>maxnet</code>. The package extends the target-group approach with phenological weighting, temporal overlap estimation, and raster-based kernel density estimation (KDE). Furthermore, this package includes functionality for independent spatial-fold selection and model evaluation using validation data and the true skill statistic (TSS).</p>
+<p><code>sdmhelpers</code> was developed as part of the project “HiQBioDiv: High-resolution quantification of biodiversity for conservation and management” funded by the Latvian Council of Science (Ref. No. VPP-VARAM-DABA-2024/1-0002).</p>
 <div class="section level2">
 <h2 id="installation">Installation<a class="anchor" aria-label="anchor" href="#installation"></a>
 </h2>
@@ -91,6 +91,7 @@
 <li><p><code><a href="reference/select_joint_folds.html">select_joint_folds()</a></code> for coordinated presence and background selection as complete fold groups;</p></li>
 <li><p><code><a href="reference/max_tss.html">max_tss()</a></code> for finding the maximum true skill statistic;</p></li>
 <li><p><code><a href="reference/tss_user_eval.html">tss_user_eval()</a></code> for use with ENMeval user-defined evaluation;</p></li>
+<li><p><code><a href="reference/screen_egv_variance.html">screen_egv_variance()</a></code> for use with SDMtune SWD to find variables with low variability;</p></li>
 <li><p><code><a href="reference/kde_surface.html">kde_surface()</a></code> for fast raster-based Gaussian kernel density estimation, used to create bias layer, based on (seasonally) weighted or unweighted locations.</p></li>
 </ul>
 </div>

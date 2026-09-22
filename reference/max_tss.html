@@ -78,29 +78,59 @@ background records or observed absences.</p></dd>
 </ul></div>
     <div class="section level2">
     <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
-    <p>The True Skill Statistic is calculated as</p>
-<p>$$\mathrm{TSS} = \mathrm{sensitivity} + \mathrm{specificity} - 1.$$</p>
-<p>At each threshold, predictions greater than or equal to the threshold are
+    <p>For a given threshold, predictions greater than or equal to the threshold are
 classified as positive, whereas predictions below the threshold are
 classified as negative.</p>
+<p>Sensitivity is the proportion of observed presences classified as positive:</p>
+<p>$$
+\mathrm{sensitivity} =
+\frac{\mathrm{TP}}{\mathrm{TP} + \mathrm{FN}},
+$$</p>
+<p>where TP is the number of presence records with predictions greater than or
+equal to the threshold and FN is the number of presence records with
+predictions below the threshold.</p>
+<p>Specificity is calculated from the records supplied in <code>p_neg</code> as</p>
+<p>$$
+\mathrm{specificity} =
+\frac{\mathrm{TN}}{\mathrm{TN} + \mathrm{FP}},
+$$</p>
+<p>where TN is the number of records in <code>p_neg</code> with predictions below the
+threshold and FP is the number with predictions greater than or equal to the
+threshold.</p>
+<p>When <code>p_neg</code> contains observed absences, TN and FP have their usual
+classification interpretation. When <code>p_neg</code> contains background records,
+however, those records are not necessarily true absences. In that case,
+"specificity" should be interpreted operationally as the proportion of
+background records classified as negative rather than as the proportion of
+confirmed absences correctly classified. Consequently, the resulting TSS is
+a presence-background discrimination measure rather than a TSS based on
+independently observed true absences.</p>
+<p>The True Skill Statistic is calculated as</p>
+<p>$$
+\mathrm{TSS} =
+\mathrm{sensitivity} + \mathrm{specificity} - 1.
+$$</p>
 <p>Thresholds are evaluated at every unique finite prediction value. Two
-additional classifications are considered:</p>
+additional classifications are also considered:</p>
 <ul><li><p>all records classified as negative; and</p></li>
 <li><p>all records classified as positive.</p></li>
 </ul><p>Both extreme classifications have a TSS of zero.</p>
-<p>Non-finite values, including <code>NA</code>, <code>NaN</code>, <code>Inf</code>, and
-<code>-Inf</code>, are removed separately from <code>p_pos</code> and <code>p_neg</code>.
-If no finite values remain in either vector, all returned values are
-<code>NA_real_</code>.</p>
-<p>When multiple thresholds produce the same maximum TSS, the highest
-threshold is returned. This corresponds to the most restrictive
-classification among the tied thresholds. One exception occurs when no
-evaluated threshold has a TSS greater than zero: the function returns
-<code>Inf</code>, representing classification of all records as negative.</p>
-<p>TSS is independent of prevalence when sensitivity and specificity are
-calculated from representative presence and negative samples. However,
-results can still depend strongly on the spatial, environmental, and
-sampling properties of the background or absence data.</p>
+<p>Non-finite values, including <code>NA</code>, <code>NaN</code>, <code>Inf</code>, and <code>-Inf</code>, are removed
+separately from <code>p_pos</code> and <code>p_neg.</code> If no finite values remain in either
+vector, all returned values are <code>NA_real_</code>.</p>
+<p>When multiple thresholds produce the same maximum TSS, the highest threshold
+is returned. This corresponds to the most restrictive classification among
+the tied thresholds. One exception occurs when no evaluated threshold has a
+TSS greater than zero: the function returns <code>Inf</code>, representing
+classification of all records as negative.</p>
+<p>TSS is commonly described as being independent of prevalence because
+sensitivity and specificity are calculated conditionally within the
+positive and negative samples. Nevertheless, the value obtained here can
+depend strongly on how <code>p_pos</code> and especially <code>p_neg</code> were sampled. This is
+particularly important when <code>p_neg</code> represents background rather than
+observed absences, because the composition, extent, and sampling design of
+the background data affect the estimated specificity and therefore the
+resulting TSS.</p>
     </div>
     <div class="section level2">
     <h2 id="references">References<a class="anchor" aria-label="anchor" href="#references"></a></h2>

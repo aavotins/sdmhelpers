@@ -1,7 +1,7 @@
-# Fast Gaussian KDE from sf POINT geometries
+# Fast Gaussian KDE from sf POINT Geometries
 
-Computes a weighted or unweighted Gaussian kernel density surface by
-first rasterizing point observations to a reference raster and then
+Computes a weighted or unweighted binned Gaussian kernel density surface
+by first rasterizing point observations to a reference raster and then
 applying Gaussian smoothing with
 [`fastfocal::fastfocal()`](https://hoyiwan.github.io/fastfocal/reference/fastfocal.html).
 
@@ -29,19 +29,19 @@ kde_surface(
 
 - weight_field:
 
-  Optional character string giving the name of a numeric column in `x`
-  containing point weights. If `NULL`, every point is assigned weight 1.
-  Weights belonging to points in the same raster cell are summed before
-  smoothing. Weights must be finite numeric values without missing
-  values.
+  An optional character string giving the name of a numeric column in
+  `x` containing point weights. If `NULL`, every point is assigned
+  weight 1. Weights belonging to points in the same raster cell are
+  summed before smoothing. Weights must be finite numeric values without
+  missing values.
 
 - sigma:
 
-  A single finite numeric value greater than zero. Gaussian kernel
-  standard deviation, or bandwidth, expressed in the map units of `ref`.
-  For example, if `ref` uses a projected coordinate reference system
-  measured in metres, `sigma = 3000` represents a bandwidth of 3000
-  metres.
+  A single finite numeric value greater than zero giving the Gaussian
+  kernel standard deviation, or bandwidth, expressed in the map units of
+  `ref`. For example, if `ref` uses a projected coordinate reference
+  system measured in metres, `sigma = 3000` represents a bandwidth of
+  3000 metres.
 
 - ref:
 
@@ -55,7 +55,7 @@ kde_surface(
   Character string specifying the output scaling. One of:
 
   `"none"` returns the Gaussian-smoothed rasterized counts or weight
-  sums without additional scaling.
+  sums without additional post-smoothing scaling.
 
   `"pdf"` divides the smoothed surface by its raster integral so that it
   integrates to approximately 1 over its non-missing support. Values

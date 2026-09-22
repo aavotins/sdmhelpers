@@ -5,10 +5,10 @@
 - [`phenology_overlap_weights()`](https://aavotins.github.io/sdmhelpers/reference/phenology_overlap_weights.md)
   : Calculate phenological overlap weights among species
 - [`doy_kde_weights()`](https://aavotins.github.io/sdmhelpers/reference/doy_kde_weights.md)
-  : Calculate Day-of-Year Phenology Weights Using Circular Kernel
-  Density
+  : Calculate Day-of-Year Phenology Weights Using Circular Approximation
+  to Kernel Density Estimation
 - [`torus_overlap_many()`](https://aavotins.github.io/sdmhelpers/reference/torus_overlap_many.md)
-  : Estimate Seasonal and Daily Activity Overlap on a Torus
+  : Estimate Seasonal and Diel Activity Overlap on a Torus
 
 ## Spatial fold selection
 
@@ -16,7 +16,7 @@
   : Select Complete Fold Groups to Approximate a Target Sample
   Proportion
 - [`select_joint_folds()`](https://aavotins.github.io/sdmhelpers/reference/select_joint_folds.md)
-  : Select joint presence and background folds for independent testing
+  : Select Joint Presence and Background Folds for Independent Testing
 
 ## Model evaluation
 
@@ -25,10 +25,15 @@
 - [`tss_user_eval()`](https://aavotins.github.io/sdmhelpers/reference/tss_user_eval.md)
   : Calculate TSS Statistics During ENMeval Evaluation
 
+## Variable screening
+
+- [`screen_egv_variance()`](https://aavotins.github.io/sdmhelpers/reference/screen_egv_variance.md)
+  : Screen Environmental Predictors for Zero Variance
+
 ## Spatial kernel density estimation
 
 - [`kde_surface()`](https://aavotins.github.io/sdmhelpers/reference/kde_surface.md)
-  : Fast Gaussian KDE from sf POINT geometries
+  : Fast Gaussian KDE from sf POINT Geometries
 
 ## Example observations
 

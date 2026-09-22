@@ -1,31 +1,36 @@
-# Calculate Day-of-Year Phenology Weights Using Circular Kernel Density
+# Calculate Day-of-Year Phenology Weights Using Circular Approximation to Kernel Density Estimation
 
 `doy_kde_weights()` converts `A_dates` and `B_dates` to day of year. A
 kernel density curve is then estimated from `A_dates`, which are
 interpreted as reference activity, occurrence, or phenology dates. The
-density of this reference distribution is evaluated at each date in
-`B_dates`.
+estimated density of this reference distribution is evaluated at each
+date in `B_dates`.
 
-Circularity is approximated by repeating the reference day-of-year
-values one seasonal cycle before and after the original observations.
-This reduces boundary effects between the end and beginning of the year.
+Circularity is approximated by periodically extending the reference
+day-of-year data, repeating the observations one seasonal cycle before
+and after the original observations. This approach reduces boundary
+effects between the end and beginning of the year.
 
-The density values associated with `B_dates` can be transformed to
-weights using either:
+The density values associated with `B_dates` can be transformed into
+weights using either of the following methods:
 
 - `"minmax_A"`: Min-max scaling relative to the complete reference
-  density curve. The minimum density along the curve is assigned a
-  weight of zero and the maximum density is assigned a weight of one.
+  density curve. The minimum density value along the curve is assigned a
+  weight of zero and the maximum density value is assigned a weight of
+  one.
 
-- `"percentile_A"`: he empirical percentile rank of each
-  density-at-`B_dates` value among all values of the reference density
-  curve. Larger values therefore indicate dates occurring during
-  relatively high-density portions of the estimated reference phenology.
+- `"percentile_A"`: The empirical percentile rank of each
+  density-at-`B_dates` value among the density values evaluated over the
+  complete reference-grid. Larger values therefore indicate dates
+  occurring during relatively high-density portions of the estimated
+  reference phenology.
 
-The resulting weights may be used as relative measures of seasonal
-availability, sampling relevance, or phenological correspondence. For
-example, they may be supplied as observation weights in a subsequent
-spatial kernel-density or sampling-effort analysis.
+The resulting weights are relative measures of seasonal correspondence
+to the reference density. Depending on the interpretation of `A_dates`,
+they may be used to represent relative seasonal availability, sampling
+relevance, or phenological correspondence. For example, the weights may
+be supplied as observation weights in a subsequent spatial
+kernel-density or sampling-effort analysis.
 
 ## Usage
 
@@ -45,8 +50,8 @@ doy_kde_weights(
 
 - A_dates:
 
-  A non-empty vector of reference dates representing the activity or
-  phenological distribution from which the seasonal density curve is
+  A non-empty vector of reference dates representing the seasonal
+  activity or phenology from which the seasonal density curve is
   estimated. Values must be coercible to class `"Date"` by
   [`as.Date()`](https://rdrr.io/r/base/as.Date.html). Missing or invalid
   dates are not allowed.
@@ -73,42 +78,49 @@ doy_kde_weights(
   otherwise, a 365-day cycle is used.
 
   Setting this argument explicitly can be useful when several datasets
-  must be analysed using the same seasonal definition. Note that setting
-  `n_days = 365` does not remove or remap observations occurring on day
-  366.
+  must be analysed using the same seasonal definition. If
+  `n_days = 365`, neither `A_dates` nor `B_dates` may contain an
+  observation on day 366; otherwise, the function returns an error.
 
 - bw:
 
-  Bandwidth passed to
-  [`stats::density()`](https://rdrr.io/r/stats/density.html). The
-  default, `"nrd0"`, uses the corresponding automatic
-  bandwidth-selection rule. A positive numeric bandwidth may be supplied
-  to control the amount of seasonal smoothing directly. The bandwidth is
-  expressed in day-of-year units.
+  Bandwidth used for kernel density estimation. May be a positive
+  numeric value expressed in day-of-year units or one of `"nrd0"`,
+  `"nrd"`, `"ucv"`, `"bcv"`, or `"SJ"` for automatic bandwidth
+  selection. The default is `"nrd0"`.
+
+  For automatic bandwidth selection, the bandwidth is estimated from the
+  original reference day-of-year values (`A_doy`) using the
+  corresponding function in `stats`. This calculation is performed
+  before the reference observations are repeated for the circular
+  approximation. The resulting numeric bandwidth is then passed to
+  [`stats::density()`](https://rdrr.io/r/stats/density.html)
 
 - n:
 
   Either `NULL` or an integer giving the number of equally spaced
-  evaluation points used for the estimated density curve. When `NULL`,
-  `n_days` points are used. Values smaller than 10 are not allowed.
+  evaluation points used to represent the estimated density curve. When
+  `NULL`, `n_days` points are used. Values smaller than 10 are not
+  allowed.
 
-  Increasing `n` produces a more finely resolved density curve but does
-  not add information beyond that contained in the input dates.
+  Increasing `n` produces a more finely resolved evaluation grid but
+  does not add information beyond that contained in the input dates or
+  change the underlying bandwidth.
 
 - eps:
 
   A single numeric value in the interval \\\[0,\\0.5)\\. Used only when
   `scale = "percentile_A"`. If `eps > 0`, percentile weights are clamped
-  between `eps` and `1 - eps`. This prevents exact zero and one values
-  before transformations such as the logit.
+  between to the interval \\\[0,\\1 - eps\]\\. This prevents exact zero
+  and one values before transformations such as the logit.
 
 ## Value
 
 A named list containing:
 
 - `weights_raw`: A numeric vector with one value per element of
-  `B_dates`, containing the unscaled reference-density value evaluated
-  at the corresponding day of year.
+  `B_dates`, containing the unscaled estimated reference-density value
+  evaluated at the corresponding day of year.
 
 - `weights`: A numeric vector with one scaled phenological weight per
   element of `B_dates`. Values are on a zero-to-one scale, subject to
@@ -130,10 +142,10 @@ to the order and length of `B_dates`.
 
 ## Details
 
-Estimates a seasonal activity-density curve from a set of reference
-dates and assigns phenological weights to another set of dates.
-Seasonality is represented by day of year and estimated using a circular
-approximation to kernel density estimation.
+Estimates a seasonal density curve from a set of reference dates and
+assigns phenological weights to another set of dates. Seasonality is
+represented by day of year and estimated using a circular approximation
+to kernel density estimation.
 
 Day of year is calculated as the zero-based `yday` component returned by
 [`as.POSIXlt()`](https://rdrr.io/r/base/as.POSIXlt.html) plus one. Thus,
@@ -151,14 +163,19 @@ observations on both sides allows observations near the beginning of the
 year to influence the density near the end of the year, and vice versa.
 
 The approach is a practical wrapped-data approximation rather than a
-specialised circular probability-density estimator. Because three copies
-of every reference observation are passed to
-[`stats::density()`](https://rdrr.io/r/stats/density.html), the absolute
-magnitude of the returned density is affected by this construction. The
-scaled weights remain useful for relative comparisons within a result,
-but `weights_raw` should not be interpreted as a conventional
-probability density integrating to one over the focal day-of-year
-interval.
+specialised circular probability-density estimator. Because each
+reference day-of-year value is represented three times as periodically
+shifted copies in the input to
+[`stats::density()`](https://rdrr.io/r/stats/density.html), the
+resulting kernel density is normalised over the full replicated input
+rather than over a single seasonal cycle. Consequently, the absolute
+magnitude of the density over the focal day-of-year interval depends on
+this construction. The scaled weights remain useful for relative
+comparisons within a result, but `weights_raw` should not be interpreted
+as a conventional probability density integrating to one over the focal
+day-of-year interval.
+
+## Min-max scaling
 
 With `"minmax_A"` scaling, weights are calculated as:
 
@@ -166,36 +183,45 @@ With `"minmax_A"` scaling, weights are calculated as:
 
 where \\f(B_i)\\ is the reference-density value at the day of year of
 the \\i\\-th `B_dates` observation, and the minimum and maximum are
-calculated over the full estimated reference curve.
+calculated over the complete estimated reference density curve.
 
-With `"percentile_A"` scaling, each weight is the proportion of values
-along the estimated reference curve that are less than or equal to the
-density-at-date value:
+## Percentile scaling
+
+With `"percentile_A"` scaling, each weight represents the proportion of
+evaluation-grid points at which the estimated reference density is less
+than or equal to the density at the corresponding `B_dates` observation:
 
 \$\$ w_i = \frac{1}{m}\sum\_{j=1}^{m} I(f_j \leq f(B_i)) \$\$
 
 where \\m\\ is the number of density-grid points and
-\\\mathbf{1}\\\cdot\\\\ is the indicator function.
+\\\mathbf{I}\\\cdot\\\\ is the indicator function.
 
-This percentile is calculated over grid points rather than over the
-original observations in `A_dates`. It therefore describes the relative
-position of a date's density within the estimated annual density curve,
-not the percentile rank of that date among the observed reference dates.
+This weight is calculated from the density value at the evaluation-grid
+points rather than over the original observations in `A_dates`. It
+therefore describes how the density at a given date ranks relative to
+the estimated density levels across the seasonal cycle, not the
+percentile rank of that date among the observed reference dates.
 
 Dates from different calendar years are pooled by day of year.
-Consequently, the function estimates an average seasonal pattern and
-does not retain interannual differences. In addition, calendar dates
-after February 28 are shifted by one day in leap years relative to
-non-leap years because the function uses literal calendar day of year.
-Users requiring a leap-day-free or biologically standardised seasonal
-axis should preprocess their dates before calling this function.
+Consequently, the function estimates a seasonal pattern pooled across
+years and does not retain interannual differences. The function uses
+literal calendar day of year. Therefore, for dates from March 1 onward,
+the same month-and-day date has a day-of-year value one greater in a
+leap year than in a non-leap year. Users requiring a leap-day-free or
+biologically standardised seasonal axis should preprocess their dates
+before calling this function.
 
 ## Input validation
 
-Both date vectors must be present and non-empty. Conversion with
+Both date vectors must be provided and non-empty. Conversion with
 [`as.Date()`](https://rdrr.io/r/base/as.Date.html) must not produce
 missing values. The function also requires `n_days` to be either 365 or
 366 and `n` to be at least 10.
+
+If n_days = 365, neither date vector may contain an observation on day
+366. Setting n_days = 366 is allowed even when no observation falls on
+day 366; in that case, the density is still estimated on a 366-day
+seasonal cycle.
 
 For `"minmax_A"` scaling, the estimated density curve must have a
 finite, non-degenerate range. An error is produced when its maximum is
@@ -212,6 +238,15 @@ bandwidth produces stronger smoothing across dates. Automatic bandwidth
 selection provides a convenient default, but a biologically meaningful
 numeric bandwidth may be preferable when the expected duration of an
 activity period is known.
+
+Automatic bandwidth selection is performed using the original reference
+day-of-year values before observations are repeated for the circular
+approximation, so the repeated observations used for boundary correction
+do not influence bandwidth selection.
+
+Because these automatic bandwidth selectors are conventional
+one-dimensional methods, they do not explicitly account for the circular
+distance between the beginning and end of the year.
 
 ## See also
 

@@ -1,15 +1,17 @@
 # sdmhelpers
 
-`sdmhelpers` provides helper functions for species distribution
-modelling with `maxnet` workflows, extending target-group aproach with
-phenological weighting, temporal overlap estimation, and raster-based
-kernel density estimation. Furthermore this package includes
-functionality for independent spatial-fold selection and model
-evaluation with validation TSS.
+`sdmhelpers` provides helper functions to support species distribution
+modelling (SDM) workflows implemented with `maxnet`. The package extends
+the target-group approach with phenological weighting, temporal overlap
+estimation, and raster-based kernel density estimation (KDE).
+Furthermore, this package includes functionality for independent
+spatial-fold selection and model evaluation using validation data and
+the true skill statistic (TSS).
 
-`sdmhelpers` was developed in project “HiQBioDiv: High-resolution
-quantification of biodiversity for conservation and management” funded
-by the Latvian Council of Science (Ref. No. VPP-VARAM-DABA-2024/1-0002).
+`sdmhelpers` was developed as part of the project “HiQBioDiv:
+High-resolution quantification of biodiversity for conservation and
+management” funded by the Latvian Council of Science (Ref.
+No. VPP-VARAM-DABA-2024/1-0002).
 
 ## Installation
 
@@ -59,6 +61,9 @@ The package currently includes:
 
 - [`tss_user_eval()`](https://aavotins.github.io/sdmhelpers/reference/tss_user_eval.md)
   for use with ENMeval user-defined evaluation;
+
+- [`screen_egv_variance()`](https://aavotins.github.io/sdmhelpers/reference/screen_egv_variance.md)
+  for use with SDMtune SWD to find variables with low variability;
 
 - [`kde_surface()`](https://aavotins.github.io/sdmhelpers/reference/kde_surface.md)
   for fast raster-based Gaussian kernel density estimation, used to
