@@ -1,35 +1,852 @@
 ---
-title: "introduction"
-output: rmarkdown::html_vignette
+title: "Introduction to sdmhelpers"
+output:
+  rmarkdown::html_vignette:
+    toc: true
 vignette: >
-  %\VignetteIndexEntry{introduction}
+  %\VignetteIndexEntry{Introduction to sdmhelpers}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
+bibliography: references.bib
+link-citations: true
 ---
 
 ```{r, include = FALSE}
 knitr::opts_chunk$set(
   collapse = TRUE,
-  comment = "#>"
+  comment = "#>",
+  fig.width = 7,
+  fig.height = 5
 )
 ```
 
 ```{r setup}
 library(sdmhelpers)
+library(sf)
+library(ggplot2)
 ```
 
-# Introduction to sdmhelpers
+# Overview
 
-## Overview
+`sdmhelpers` provides helper functions for species distribution modelling (SDM)
+workflows, with particular emphasis on presence-background models implemented
+with `maxnet`. The package contains tools for constructing sampling-bias
+surfaces from target-group records, weighting target-group observations by
+seasonal or combined seasonal and diel overlap, selecting complete spatial
+folds for independent testing, screening environmental predictors, and
+evaluating predictions using the true skill statistic (TSS).
 
-## Phenological weighting
+Presence-only SDMs are sensitive to differences between the sampling process
+that generated species observations and the process used to select background
+locations. A commonly used approach is therefore to select or weight background
+data so that they reflect similar sampling bias to the presence data
+[@phillips2009; @elith2011]. `sdmhelpers` extends this idea by allowing records
+from a target group to contribute unequally according to their temporal
+similarity to the focal species.
 
-## Seasonal and diel overlap
+The examples below use datasets distributed with `sdmhelpers`. They are reduced
+or pseudonymised datasets intended for demonstrating package functionality, not
+for biological inference.
 
-## Selecting independent spatial folds
+`sdmhelpers` was developed as part of the project *HiQBioDiv:
+High-resolution quantification of biodiversity for conservation and
+management*, funded by the Latvian Council of Science
+(Ref. No. VPP-VARAM-DABA-2024/1-0002).
 
-## Evaluating models with TSS
+The development version can be installed from GitHub with:
 
-## Creating a spatial KDE surface
+```{r install, eval = FALSE}
+# install.packages("remotes")
+remotes::install_github("aavotins/sdmhelpers")
+```
 
-## Recommended workflow
+# Example data
+
+Several example datasets are included in the package. The examples in this
+vignette use bird, amphibian and bryophyte observations, spatial presence and background
+locations, spatial blocks, a 100-m grid, known habitat-inventory dates, and an
+example environmental raster.
+
+```{r data}
+data("aves_small", package = "sdmhelpers")
+data("bryophyta_one", package = "sdmhelpers")
+data("habitat_inventories", package = "sdmhelpers")
+data("points100", package = "sdmhelpers")
+data("example_grid", package = "sdmhelpers")
+example_grid=terra::unwrap(example_grid)
+data("example_presences", package = "sdmhelpers")
+data("example_background", package = "sdmhelpers")
+data("example_independent_blocks", package = "sdmhelpers")
+data("egv_names", package = "sdmhelpers")
+```
+
+The environmental raster used later in the vignette is stored in
+`inst/extdata`.
+
+```{r env-path}
+egv_file <- system.file("extdata",
+                        "example_egv.tif",
+                        package = "sdmhelpers")
+
+egv_file
+```
+
+# Simple target-group bias surface
+
+Target-group background sampling uses observations of taxa that are expected to
+have been collected through a sampling process similar to that of the focal
+species. If sampling effort is spatially biased, drawing background data from
+the same biased sampling domain can reduce the contrast between presence and
+background sampling processes [@phillips2009].
+
+Here, one species from `aves_small` is treated as the focal species and all
+remaining species form the target group. The focal species is chosen
+programmatically as the species with the largest number of records so that the
+example does not depend on a particular species name.
+
+```{r simple-target-group}
+target_species <- names(
+  sort(table(aves_small$species), decreasing = TRUE)
+)[1]
+
+target_species
+
+target_group <- aves_small
+```
+
+Multiple observations can occur in the same 100-m grid cell. For the spatial
+bias surface, records are therefore counted by grid cell and supplied to
+`kde_surface()` as weights.
+
+```{r simple-target-group-points}
+tg_counts <- aggregate(
+  list(n_records = rep(1, nrow(target_group))),
+  by = list(id100 = target_group$id100),
+  FUN = sum
+)
+
+idx <- match(tg_counts$id100, points100$id)
+keep <- !is.na(idx)
+
+tg_points <- points100[idx[keep], ]
+tg_points$n_records <- tg_counts$n_records[keep]
+
+tg_points
+
+```
+
+`kde_surface()` first bins point weights to the reference raster and then
+applies Gaussian smoothing. This makes the calculation practical for large
+rasters and large bandwidths. Kernel density estimation in general is described
+by @silverman1986.
+
+The example grid uses EPSG:3059, whose map units are metres, so `sigma = 3000`
+corresponds to a Gaussian bandwidth of 3 km. With `normalize = "pdf"`, the
+resulting surface is normalized to integrate to one and represents the spatial
+probability density of target-group sampling effort. It can therefore be used
+as a relative sampling-bias surface for background sampling.
+
+
+```{r simple-kde, eval=TRUE, fig.cap = "Unweighted target-group sampling-bias surface."}
+simple_bias <- kde_surface(
+  x = tg_points,
+  weight_field = "n_records",
+  sigma = 3000,
+  ref = example_grid,
+  normalize = "pdf",
+  mask = TRUE
+)
+
+terra::plot(simple_bias, main = "Simple target-group bias")
+```
+
+This simple approach assumes that every target-group record is equally
+informative about the sampling process affecting the focal species. The next
+sections relax that assumption.
+
+
+# Phenologically weighted target group
+
+Species observed by the same people or recording scheme may nevertheless have
+different seasonal detectability. A species recorded mainly in winter, for
+example, may provide little information about sampling effort relevant to a
+species recorded mainly during late spring.
+
+`phenology_overlap_weights()` estimates the overlap between the day-of-year
+distribution of a focal species and each comparison species using kernel-density
+overlap. The overlap coefficient describes the common area of two estimated
+distributions [@pastore2018; @pastore2019].
+
+First, day of year is added to the bird records.
+
+```{r phenology-data}
+bird_dates <- aves_small
+bird_dates$DoY <- as.POSIXlt(bird_dates$date)$yday + 1L
+
+target_code <- bird_dates$code[
+  match(target_species, bird_dates$species)
+]
+
+target_code
+```
+
+We then estimate phenological overlap between the focal species and every
+species in the remaining target group.
+
+```{r phenology-overlap}
+phenology_weights <- phenology_overlap_weights(
+  target = bird_dates,
+  group = bird_dates[bird_dates$species != target_species, ],
+  target_code = target_code,
+  target_id = "code",
+  group_id = "code",
+  target_doy = "DoY",
+  group_doy = "DoY",
+  type = "2",
+  min_n = 5
+)
+
+phenology_weights[
+  order(phenology_weights$weight, decreasing = TRUE),
+]
+```
+
+The returned `weight` values sum to one across comparison species with valid
+overlap estimates. Here, each target-group observation receives the weight of
+its species. Records are then summed within 100-m cells before KDE smoothing.
+
+```{r phenology-weighted-points}
+target_group_p <- merge(
+  target_group,
+  phenology_weights[, c("code", "weight")],
+  by = "code",
+  all.x = TRUE
+)
+
+target_group_p <- target_group_p[
+  is.finite(target_group_p$weight) &
+    !is.na(target_group_p$id100),
+]
+
+tg_weighted <- aggregate(
+  list(weight = target_group_p$weight),
+  by = list(id100 = target_group_p$id100),
+  FUN = sum
+)
+
+idx <- match(tg_weighted$id100, points100$id)
+keep <- !is.na(idx)
+
+tg_points_weighted <- points100[idx[keep], ]
+tg_points_weighted$weight <- tg_weighted$weight[keep]
+```
+
+```{r phenology-kde, fig.cap = "Phenologically weighted target-group sampling-bias surface."}
+phenology_bias <- kde_surface(
+  x = tg_points_weighted,
+  weight_field = "weight",
+  sigma = 3000,
+  ref = example_grid,
+  normalize = "meanG",
+  mask = TRUE
+)
+
+terra::plot(
+  phenology_bias,
+  main = "Phenologically weighted target-group bias"
+)
+```
+
+The weighted surface should be interpreted as a relative sampling-bias surface,
+not as an estimate of species occurrence probability. Its purpose is to
+describe where observations relevant to the focal species' seasonal sampling
+process were more or less likely to have been collected.
+
+# Seasonally and dielly weighted target group
+
+For taxa whose detectability varies both seasonally and through the day,
+seasonal overlap alone may be insufficient. `torus_overlap_many()` represents
+season and time of day as two circular dimensions and estimates overlap on a
+two-dimensional torus. Circular treatment is important because both annual and
+daily cycles wrap around their endpoints; see @mardia2000 for directional
+statistics and @ridout2009 for overlap estimation of diel activity patterns.
+
+
+The bird dataset contains date-time observations.
+Because this is an introductory vignette, the example uses the focal species
+with the largest number of valid date-times and compares it with the 20 most
+frequently recorded remaining species.
+
+```{r torus-data}
+
+target_species_torus <- target_species
+
+reference_data <- aves_small[aves_small$species == target_species_torus & 
+                               !is.na(aves_small$date_time),]
+
+comparison_data <- aves_small[!is.na(aves_small$date_time),]
+
+reference_data$obs_date <- as.Date(reference_data$date_time)
+reference_data$obs_time <- hms::as_hms(reference_data$date_time)
+
+comparison_data$obs_date <- as.Date(comparison_data$date_time)
+comparison_data$obs_time <- hms::as_hms(comparison_data$date_time)
+```
+
+For speed, the example uses a coarser evaluation grid than would often be used
+in a final analysis.
+
+```{r torus-overlap}
+torus_result <- torus_overlap_many(
+  reference_data = reference_data,
+  comparison_data = comparison_data,
+  comparison_group_col = "species",
+  reference_date_col = "obs_date",
+  reference_time_col = "obs_time",
+  comparison_date_col = "obs_date",
+  comparison_time_col = "obs_time",
+  reference_name = target_species_torus,
+  season_bw_days = 14,
+  daily_bw_hours = 1,
+  date_resolution_days = 7,
+  time_resolution_minutes = 60,
+  min_n = 5,
+  return_density = FALSE
+)
+
+torus_overlap <- torus_result$overlap
+torus_overlap <- torus_overlap[
+  order(torus_overlap$overlap, decreasing = TRUE),
+]
+
+head(torus_overlap, 10)
+```
+
+The overlap coefficient ranges from zero to one for normalized densities. A
+large value indicates that a comparison species has a seasonal-diel observation
+distribution similar to the focal species.
+
+To use these coefficients as relative species weights in a target group, they
+can be normalized across comparison species.
+
+```{r torus-weights}
+ok <- is.finite(torus_overlap$overlap)
+
+torus_overlap$weight <- NA_real_
+torus_overlap$weight[ok] <-
+  torus_overlap$overlap[ok] /
+  sum(torus_overlap$overlap[ok])
+
+head(
+  torus_overlap[
+    order(torus_overlap$weight, decreasing = TRUE),
+    c("comparison", "overlap", "weight")
+  ],
+  10
+)
+```
+
+These weights can be joined back to the individual observations and passed to
+`kde_surface()` in exactly the same way as the phenological weights above.
+
+The overlap can also be visualised, when setting `return_density = TRUE`
+
+```{r torus-plot}
+torus_result <- torus_overlap_many(
+  reference_data = reference_data,
+  comparison_data = comparison_data,
+  comparison_group_col = "species",
+  reference_date_col = "obs_date",
+  reference_time_col = "obs_time",
+  comparison_date_col = "obs_date",
+  comparison_time_col = "obs_time",
+  reference_name = target_species_torus,
+  season_bw_days = 14,
+  daily_bw_hours = 1,
+  date_resolution_days = 7,
+  time_resolution_minutes = 60,
+  min_n = 5,
+  return_density = TRUE
+)
+
+ggplot(torus_result$density,aes(x = seasonal_position_days,
+                          y = decimal_hour,
+                          fill = comparison_density)) +
+  geom_raster() +
+  facet_wrap(~ comparison) +
+  scale_y_continuous(breaks = seq(0, 24, by = 3)) +
+  viridis::scale_fill_viridis() +
+  labs(x = "Seasonal position (days from 1 January)",
+       y = "Time of day",
+       fill = "Density",
+       title = "Species-specific registration activity") +
+  theme_bw()
+
+ggplot(torus_result$density,aes(x = seasonal_position_days,
+                          y = decimal_hour,
+                          fill = shared_density)) +
+  geom_raster() +
+  facet_wrap(~ comparison) +
+  scale_y_continuous(breaks = seq(0, 24, by = 3)) +
+  viridis::scale_fill_viridis() +
+  labs(x = "Seasonal position (days from 1 January)",
+       y = "Time of day",
+       fill = "Density",
+       title = "Registration activity overlap with STRALU") +
+  theme_bw()
+
+
+```
+
+
+# Known inventory dates
+
+Sometimes the dates of a survey or habitat inventory are known, while the
+species itself was not necessarily recorded during that survey. In this case,
+`doy_kde_weights()` can estimate how closely each inventory date corresponds to
+the seasonal activity distribution of a target species.
+
+The function estimates a wrapped day-of-year KDE from reference dates and
+evaluates that density at another set of dates. The wrapped construction reduces
+the artificial separation between observations near the end and beginning of a
+year. Bandwidth controls the degree of smoothing, as in conventional KDE
+[@silverman1986].
+
+The example below uses one bryophyte species, which is considered old-growth 
+forest specialist species, thus specifically searched during habitat inventories, as the
+reference seasonal distribution and weights the dates in
+`habitat_inventories`.
+
+```{r known-dates}
+bryophyta_species <- names(
+  sort(table(bryophyta_one$species), decreasing = TRUE)
+)[1]
+
+reference_dates <- bryophyta_one$date[
+  bryophyta_one$species == bryophyta_species &
+    !is.na(bryophyta_one$date)
+]
+
+inventory_keep <- !is.na(habitat_inventories$date)
+
+inventory_weights <- doy_kde_weights(
+  A_dates = reference_dates,
+  B_dates = habitat_inventories$date[inventory_keep],
+  scale = "percentile_A",
+  bw = "nrd0"
+)
+
+weighted_inventories <- habitat_inventories[inventory_keep, ]
+weighted_inventories$phenology_weight <- inventory_weights$weights
+```
+
+With `scale = "percentile_A"`, weights describe how high the estimated
+reference density is relative to density values across the seasonal cycle.
+They are relative phenological correspondence scores rather than occurrence
+probabilities.
+
+```{r inventory-summary}
+aggregate(
+  phenology_weight ~ habitat_type,
+  data = weighted_inventories,
+  FUN = mean
+)
+```
+
+The estimated seasonal reference curve can also be inspected directly.
+
+```{r inventory-density, fig.cap = "Estimated seasonal activity curve used for weighting known inventory dates."}
+plot(
+  inventory_weights$density$x,
+  inventory_weights$density$y,
+  type = "l",
+  xlab = "Day of year",
+  ylab = "Estimated reference density"
+)
+```
+
+
+
+# Selecting an independent testing set
+
+Random train-test splitting can give overly optimistic estimates of predictive
+performance when nearby observations are spatially dependent. Spatially
+structured resampling is therefore generally preferable when the intended
+prediction involves geographic transfer [@roberts2017].
+
+`sdmhelpers` does not define the spatial blocks themselves. Instead,
+`select_folds_by_quota()` and `select_joint_folds()` select complete groups from
+fold identifiers created elsewhere. Independence therefore comes from the
+design of the folds, not from the selection function.
+
+The package contains example presence records, background records, and
+independent spatial polygons.
+
+```{r spatial-folds}
+pres_sf <- sf::st_as_sf(
+  example_presences,
+  coords = c("x", "y"),
+  crs = 3059
+)
+
+bg_sf <- sf::st_as_sf(
+  example_background,
+  coords = c("x", "y"),
+  crs = 3059
+)
+
+block_id <- setdiff(
+  names(example_independent_blocks),
+  attr(example_independent_blocks, "sf_column")
+)[1]
+
+pres_joined <- sf::st_join(
+  pres_sf,
+  example_independent_blocks[block_id],
+  join = sf::st_within,
+  left = TRUE
+)
+
+bg_joined <- sf::st_join(
+  bg_sf,
+  example_independent_blocks[block_id],
+  join = sf::st_within,
+  left = TRUE
+)
+
+pres_folds <- pres_joined[[block_id]]
+bg_folds <- bg_joined[[block_id]]
+```
+
+When both presences and background should be withheld from the same spatial
+blocks, `select_joint_folds()` is convenient.
+
+```{r joint-fold-selection}
+independent <- select_joint_folds(
+  pres_folds = pres_folds,
+  bg_folds = bg_folds,
+  target_prop = 0.25,
+  pres_bounds = c(0.20, 0.30),
+  bg_bounds = c(0.20, 0.30),
+  max_tries = 3000,
+  bg_match_weight = 1,
+  seed = 1,
+  print_report = FALSE
+)
+
+independent$selected_fold_ids
+independent$summary[c(
+  "n_pres_selected",
+  "n_bg_selected",
+  "prop_pres_selected",
+  "prop_bg_selected"
+)]
+```
+
+The returned logical vectors preserve the row order of the input data and can
+be used directly for subsetting.
+
+```{r split-independent}
+pres_test <- example_presences[independent$pres_selected_idx, ]
+pres_train <- example_presences[!independent$pres_selected_idx, ]
+
+bg_test <- example_background[independent$bg_selected_idx, ]
+bg_train <- example_background[!independent$bg_selected_idx, ]
+
+c(
+  pres_train = nrow(pres_train),
+  pres_test = nrow(pres_test),
+  bg_train = nrow(bg_train),
+  bg_test = nrow(bg_test)
+)
+```
+
+If only one type of observation needs to be selected, the simpler
+`select_folds_by_quota()` can be used instead.
+
+```{r one-set-fold-selection}
+presence_only_selection <- select_folds_by_quota(
+  folds = pres_folds,
+  target_prop = 0.25,
+  bounds = c(0.20, 0.30),
+  seed = 1,
+  print_report = FALSE
+)
+
+presence_only_selection$summary$prop_selected
+```
+
+# Screening predictor variance
+
+Predictors with zero or extremely small variance in the data available for
+model fitting can create numerical problems and cannot meaningfully contribute
+to estimating an environmental response. `screen_egv_variance()` checks
+predictor variance across several SDM-relevant subsets rather than only across
+the complete dataset.
+
+The example environmental raster contains five ecogeographical variables.
+
+```{r egv}
+env <- terra::rast(egv_file)
+env
+```
+
+For a compact vignette example, a subset of the training background is used to
+construct an `SDMtune::SWD` object.
+
+```{r swd,eval=TRUE}
+set.seed(42)
+
+bg_screen <- bg_train[sample.int(nrow(bg_train), 5000), ]
+
+train_swd <- SDMtune::prepareSWD(
+  species = "example_species",
+  p = pres_train,
+  a = bg_screen,
+  env = env
+)
+```
+
+The environmental-domain check is added by supplying `env`.
+
+```{r variance-screen, eval=TRUE}
+variance_screen <- screen_egv_variance(
+  train = train_swd,
+  env = env,
+  env_sample_n = 5000,
+  seed = 1,
+  sd_tol = 0,
+  verbose = FALSE
+)
+
+variance_screen$keep
+variance_screen$remove
+```
+
+A predictor is retained only if it passes every requested check. The
+`diagnostics` component provides the standard deviation and failure reason for
+every evaluated predictor/subset combination.
+
+```{r variance-diagnostics, eval=TRUE}
+head(variance_screen$diagnostics)
+```
+
+
+# Fitting a small maxnet model
+
+The package is designed to support, rather than replace, SDM software. The
+following compact example fits a `maxnet` model after the independent split
+created above. Only predictors retained by the variance screen are used.
+
+First extract environmental values for the training and independent-testing
+locations.
+
+```{r extract-env}
+training_set <- SDMtune::prepareSWD(
+  species = "example_species",
+  p = pres_train,
+  a = bg_train,
+  env = env
+)
+training_set=SDMtune::addSamplesToBg(training_set)
+
+testing_set <- SDMtune::prepareSWD(
+  species = "example_species",
+  p = pres_test,
+  a = bg_test,
+  env = env
+)
+testing_set=SDMtune::addSamplesToBg(testing_set)
+
+```
+
+
+Fit the model using presences (`1`) and background (`0`).
+
+```{r fit-maxnet}
+maxnet_model <- maxnet::maxnet(
+  p = training_set@pa,
+  data = training_set@data
+)
+```
+
+
+# Evaluating models with TSS
+
+The true skill statistic is
+
+\[
+\mathrm{TSS} = \mathrm{sensitivity} + \mathrm{specificity} - 1,
+\]
+
+and was proposed for SDM evaluation as an alternative to measures such as
+Cohen's kappa [@allouche2006].
+
+`max_tss()` evaluates all unique finite prediction thresholds and returns the
+threshold that maximizes TSS together with sensitivity and specificity.
+
+For presence-background models, background locations are not confirmed
+absences. Consequently, the value reported as specificity is operationally the
+proportion of background records classified as negative, and the resulting TSS
+should be interpreted as presence-background discrimination rather than
+classification accuracy against known true absences.
+
+```{r independent-predictions}
+p_pos <- predict(
+  maxnet_model,
+  newdata = testing_set@data[testing_set@pa == 1, ],
+  type = "cloglog"
+)
+
+p_neg <- predict(
+  maxnet_model,
+  newdata = testing_set@data[testing_set@pa == 0, ],
+  type = "cloglog"
+)
+
+tss_result <- max_tss(
+  p_pos = p_pos,
+  p_neg = p_neg
+)
+
+tss_result
+```
+
+The selected threshold can then be used to convert continuous predictions into
+binary classifications if a binary map or confusion matrix is required.
+
+```{r apply-threshold}
+threshold <- unname(tss_result["threshold"])
+
+presence_class <- p_pos >= threshold
+background_class <- p_neg >= threshold
+
+c(
+  sensitivity = mean(presence_class),
+  background_specificity = mean(!background_class)
+)
+```
+
+# Cross-validation TSS with ENMeval
+
+The independent testing set created above is reserved for evaluating the final
+model and should not be used during model tuning. Alternative model settings
+can instead be compared by cross-validation using only the training data.
+Spatially structured cross-validation is particularly useful when observations
+are spatially autocorrelated because it reduces spatial dependence between
+calibration and validation data and provides a more stringent assessment of
+spatial transferability than random partitioning [@roberts2017].
+
+ENMeval provides several approaches for partitioning occurrence and background
+records and for evaluating alternative Maxent and `maxnet` model settings
+[@muscarella2014; @kass2021]. In this example, the training records are divided
+into four geographically structured groups using `ENMeval::get.block()`.
+
+```{r}
+block_folds <- ENMeval::get.block(occ = training_set@coords[training_set@pa == 1, ], 
+                                  bg = training_set@coords[training_set@pa == 0, ])
+```
+
+The block method divides occurrence localities into four spatial groups and
+assigns background records to the corresponding geographic partitions. Because
+the example coordinates are in the projected LKS-92 / Latvia TM coordinate
+reference system, the partitions are defined using projected X and Y
+coordinates rather than geographic longitude and latitude.
+
+The resulting fold identifiers are supplied to `ENMevaluate()` as user-defined
+partitions. This makes it possible to use the same spatial groups for both
+presence and background observations while retaining explicit control over the
+cross-validation design.
+
+For this example, three feature-class combinations and three regularization
+multipliers are evaluated, producing nine candidate model settings. Linear
+(`L`), quadratic (`Q`), and combined linear-quadratic (`LQ`) feature classes
+control the shapes of fitted environmental responses, whereas the
+regularization multiplier controls the strength of penalization and therefore
+model complexity.
+
+```{r fit-maxnet-ENMeval}
+presences=cbind(training_set@coords[training_set@pa == 1, ],
+                 training_set@data[training_set@pa == 1, ])
+background=cbind(training_set@coords[training_set@pa == 0, ],
+           training_set@data[training_set@pa == 0, ])
+pirmais <- ENMeval::ENMevaluate(occs = presences, 
+                       bg = background,
+                       algorithm = 'maxnet', 
+                       partitions = 'user', 
+                       user.grp=list(occs.grp=block_folds$occs.grp,
+                                     bg.grp=block_folds$bg.grp),
+                       tune.args = list(fc = c('L','Q','LQ'), 
+                                        rm = c(0.5,1,2)),
+                       other.settings=list(validation.bg='partition'),
+                       user.eval = tss_user_eval)
+```
+
+The argument `user.eval = tss_user_eval` adds TSS as a custom evaluation metric.
+For every cross-validation fold, `ENMeval` supplies predictions for training 
+occurrences, validation occurrences, training background records and validation 
+background records to `tss_user_eval()`, which then applies `max_tss()` to these validation
+predictions and returns the maximum TSS and its associated classification
+threshold.
+
+When
+
+```{r,eval=FALSE}
+
+other.settings = list(validation.bg = "partition")
+```
+
+
+is used, validation occurrences are compared only with background records from
+the corresponding validation partition. This means that both presences and
+background records are spatially withheld during evaluation. If
+`validation.bg = "full"` is used instead, validation occurrences are compared
+with the combined training and validation background predictions.
+
+For presence-background models, background locations are not confirmed
+absences. Consequently, the reported specificity is the proportion of
+background predictions falling below the selected threshold rather than
+specificity calculated from known true absences. The resulting TSS should
+therefore be interpreted as a measure of discrimination between presences and
+background rather than conventional classification accuracy.
+
+`tss_user_eval()` selects the threshold maximizing TSS separately for the
+training and validation predictions. Consequently, both `tss.train` and
+`tss.val` are optimized on the same data on which they are evaluated. In
+particular, `tss.val` should therefore be regarded as a cross-validation metric
+for comparing candidate models rather than as a fully independent estimate of
+threshold-based predictive performance.
+
+The model-level results returned by `ENMeval` summarize the fold-level
+statistics and can be inspected with:
+
+
+```{r}
+ENMeval::eval.results(pirmais)
+```
+
+
+
+Fold-specific results can be examined with:
+
+
+```{r}
+
+ENMeval::eval.results.partitions(pirmais)
+```
+
+
+Cross-validation TSS and independent-test TSS serve different purposes in this
+workflow. Cross-validation is used to compare candidate feature classes,
+regularization multipliers or other model settings using only the training
+data. Once the preferred settings have been selected and the final model has
+been fitted, the completely withheld independent testing set can be used for a
+separate assessment of predictive performance.
+
+For a strictly independent threshold-based assessment, the classification
+threshold should be selected from training or cross-validation data and then
+applied unchanged to the independent testing data, rather than re-optimizing
+the threshold on the independent test set.
+
+
+# References

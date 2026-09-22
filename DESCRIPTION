@@ -35,11 +35,14 @@ Imports:
     terra
 Suggests:
     ENMeval,
+    ggplot2,
     hms,
     knitr,
     rmarkdown,
+    maxnet,
     testthat (>= 3.0.0),
-    tibble
+    tibble,
+    viridis
 Config/testthat/edition: 3
 Config/roxygen2/version: 8.1.0
 VignetteBuilder: knitr

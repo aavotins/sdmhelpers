@@ -14,9 +14,9 @@ experimental](https://img.shields.io/badge/lifecycle-experimental-orange.svg)](h
 modelling (SDM) workflows implemented with `maxnet`. The package extends
 the target-group approach with phenological weighting, temporal overlap
 estimation, and raster-based kernel density estimation (KDE).
-Furthermore, this package includes functionality for independent
-spatial-fold selection and model evaluation using validation data and
-the true skill statistic (TSS).
+Furthermore, this package includes functionality for independent testing
+set selection, variable screening and model evaluation using validation
+data and the true skill statistic (TSS).
 
 `sdmhelpers` was developed as part of the project “HiQBioDiv:
 High-resolution quantification of biodiversity for conservation and

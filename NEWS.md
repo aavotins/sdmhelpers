@@ -12,3 +12,4 @@
   species, with normalized overlap-based weights.
 * Renamed `sfKDEterraff()` to `kde_surface()`.
 * Added `screen_egv_variance()` to select only variable with sufficient variability.
+* Created vignette.
