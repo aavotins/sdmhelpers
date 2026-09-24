@@ -20,12 +20,6 @@ knitr::opts_chunk$set(
 )
 ```
 
-```{r setup}
-library(sdmhelpers)
-library(sf)
-library(ggplot2)
-```
-
 # Overview
 
 `sdmhelpers` provides helper functions for species distribution modelling (SDM)
@@ -60,10 +54,25 @@ The development version can be installed from GitHub with:
 remotes::install_github("aavotins/sdmhelpers")
 ```
 
+Packages used in this vignette:
+
+
+```{r setup}
+library(sdmhelpers)
+library(sf)
+library(ggplot2)
+library(terra)
+library(maxnet)
+library(SDMtune)
+library(ENMeval)
+```
+
+
+
 # Example data
 
 Several example datasets are included in the package. The examples in this
-vignette use bird, amphibian and bryophyte observations, spatial presence and background
+vignette use bird and bryophyte observations, spatial presence and background
 locations, spatial blocks, a 100-m grid, known habitat-inventory dates, and an
 example environmental raster.
 
@@ -88,7 +97,6 @@ egv_file <- system.file("extdata",
                         "example_egv.tif",
                         package = "sdmhelpers")
 
-egv_file
 ```
 
 # Simple target-group bias surface
@@ -99,8 +107,8 @@ species. If sampling effort is spatially biased, drawing background data from
 the same biased sampling domain can reduce the contrast between presence and
 background sampling processes [@phillips2009].
 
-Here, one species from `aves_small` is treated as the focal species and all
-remaining species form the target group. The focal species is chosen
+Here, one species from `aves_small` is treated as the focal species while all 
+species form the target group. For this example, the focal species is chosen
 programmatically as the species with the largest number of records so that the
 example does not depend on a particular species name.
 
@@ -161,14 +169,14 @@ terra::plot(simple_bias, main = "Simple target-group bias")
 ```
 
 This simple approach assumes that every target-group record is equally
-informative about the sampling process affecting the focal species. The next
+informative about the sampling process affecting the focal species. The following 
 sections relax that assumption.
 
 
-# Phenologically weighted target group
+# Phenologically weighted target-group
 
 Species observed by the same people or recording scheme may nevertheless have
-different seasonal detectability. A species recorded mainly in winter, for
+different seasonal detectability and/or availability. A species recorded mainly in winter, for 
 example, may provide little information about sampling effort relevant to a
 species recorded mainly during late spring.
 
@@ -191,12 +199,12 @@ target_code
 ```
 
 We then estimate phenological overlap between the focal species and every
-species in the remaining target group.
+species in the target group.
 
 ```{r phenology-overlap}
 phenology_weights <- phenology_overlap_weights(
   target = bird_dates,
-  group = bird_dates[bird_dates$species != target_species, ],
+  group = bird_dates,
   target_code = target_code,
   target_id = "code",
   group_id = "code",
@@ -247,7 +255,7 @@ phenology_bias <- kde_surface(
   weight_field = "weight",
   sigma = 3000,
   ref = example_grid,
-  normalize = "meanG",
+  normalize = "pdf",
   mask = TRUE
 )
 
@@ -262,7 +270,7 @@ not as an estimate of species occurrence probability. Its purpose is to
 describe where observations relevant to the focal species' seasonal sampling
 process were more or less likely to have been collected.
 
-# Seasonally and dielly weighted target group
+# Seasonally and dielly weighted target-group
 
 For taxa whose detectability varies both seasonally and through the day,
 seasonal overlap alone may be insufficient. `torus_overlap_many()` represents
@@ -271,11 +279,9 @@ two-dimensional torus. Circular treatment is important because both annual and
 daily cycles wrap around their endpoints; see @mardia2000 for directional
 statistics and @ridout2009 for overlap estimation of diel activity patterns.
 
-
 The bird dataset contains date-time observations.
 Because this is an introductory vignette, the example uses the focal species
-with the largest number of valid date-times and compares it with the 20 most
-frequently recorded remaining species.
+with the largest number of valid date-times and compares it with every target-groups' species.
 
 ```{r torus-data}
 
@@ -404,7 +410,7 @@ ggplot(torus_result$density,aes(x = seasonal_position_days,
 Sometimes the dates of a survey or habitat inventory are known, while the
 species itself was not necessarily recorded during that survey. In this case,
 `doy_kde_weights()` can estimate how closely each inventory date corresponds to
-the seasonal activity distribution of a target species.
+the seasonal registration-activity distribution of a target species.
 
 The function estimates a wrapped day-of-year KDE from reference dates and
 evaluates that density at another set of dates. The wrapped construction reduces
@@ -455,7 +461,7 @@ aggregate(
 
 The estimated seasonal reference curve can also be inspected directly.
 
-```{r inventory-density, fig.cap = "Estimated seasonal activity curve used for weighting known inventory dates."}
+```{r inventory-density, fig.cap = "Estimated seasonal registration-activity curve used for weighting known inventory dates."}
 plot(
   inventory_weights$density$x,
   inventory_weights$density$y,
@@ -595,7 +601,7 @@ For a compact vignette example, a subset of the training background is used to
 construct an `SDMtune::SWD` object.
 
 ```{r swd,eval=TRUE}
-set.seed(42)
+set.seed(1)
 
 bg_screen <- bg_train[sample.int(nrow(bg_train), 5000), ]
 
@@ -638,7 +644,7 @@ The package is designed to support, rather than replace, SDM software. The
 following compact example fits a `maxnet` model after the independent split
 created above. Only predictors retained by the variance screen are used.
 
-First extract environmental values for the training and independent-testing
+First, extract environmental values for the training and independent-testing
 locations.
 
 ```{r extract-env}
