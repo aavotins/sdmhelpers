@@ -71,11 +71,6 @@
 
     
     
-<div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/aavotins/sdmhelpers" class="external-link">sdmhelpers</a></span><span class="op">)</span></span>
-<span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://r-spatial.github.io/sf/" class="external-link">sf</a></span><span class="op">)</span></span>
-<span><span class="co">#&gt; Linking to GEOS 3.12.1, GDAL 3.8.4, PROJ 9.4.0; sf_use_s2() is TRUE</span></span>
-<span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://ggplot2.tidyverse.org" class="external-link">ggplot2</a></span><span class="op">)</span></span></code></pre></div>
 <div class="section level2">
 <h2 id="overview">Overview<a class="anchor" aria-label="anchor" href="#overview"></a>
 </h2>
@@ -104,16 +99,42 @@ inference.</p>
 conservation and management</em>, funded by the Latvian Council of
 Science (Ref. No. VPP-VARAM-DABA-2024/1-0002).</p>
 <p>The development version can be installed from GitHub with:</p>
-<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># install.packages("remotes")</span></span>
 <span><span class="fu">remotes</span><span class="fu">::</span><span class="fu">install_github</span><span class="op">(</span><span class="st">"aavotins/sdmhelpers"</span><span class="op">)</span></span></code></pre></div>
+<p>Packages used in this vignette:</p>
+<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/aavotins/sdmhelpers" class="external-link">sdmhelpers</a></span><span class="op">)</span></span>
+<span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://r-spatial.github.io/sf/" class="external-link">sf</a></span><span class="op">)</span></span>
+<span><span class="co">#&gt; Linking to GEOS 3.12.1, GDAL 3.8.4, PROJ 9.4.0; sf_use_s2() is TRUE</span></span>
+<span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://ggplot2.tidyverse.org" class="external-link">ggplot2</a></span><span class="op">)</span></span>
+<span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://rspatial.org/" class="external-link">terra</a></span><span class="op">)</span></span>
+<span><span class="co">#&gt; terra 1.9.50</span></span>
+<span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/mrmaxent/maxnet" class="external-link">maxnet</a></span><span class="op">)</span></span>
+<span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://consbiol-unibern.github.io/SDMtune/" class="external-link">SDMtune</a></span><span class="op">)</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt;    _____  ____   __  ___ __</span></span>
+<span><span class="co">#&gt;   / ___/ / __ \ /  |/  // /_ __  __ ____   ___</span></span>
+<span><span class="co">#&gt;   \__ \ / / / // /|_/ // __// / / // __ \ / _ \</span></span>
+<span><span class="co">#&gt;  ___/ // /_/ // /  / // /_ / /_/ // / / //  __/</span></span>
+<span><span class="co">#&gt; /____//_____//_/  /_/ \__/ \__,_//_/ /_/ \___/  version 1.3.3</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; To cite this package in publications type: citation("SDMtune").</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; Attaching package: 'SDMtune'</span></span>
+<span><span class="co">#&gt; The following object is masked from 'package:maxnet':</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt;     thresholds</span></span>
+<span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://jamiemkass.github.io/ENMeval/" class="external-link">ENMeval</a></span><span class="op">)</span></span>
+<span><span class="co">#&gt; This is ENMeval version 2.0.6. </span></span>
+<span><span class="co">#&gt; For worked examples, please consult the vignette: &lt;https://jamiemkass.github.io/ENMeval/articles/ENMeval-2.0-vignette.html&gt;.</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="example-data">Example data<a class="anchor" aria-label="anchor" href="#example-data"></a>
 </h2>
 <p>Several example datasets are included in the package. The examples in
-this vignette use bird, amphibian and bryophyte observations, spatial
-presence and background locations, spatial blocks, a 100-m grid, known
+this vignette use bird and bryophyte observations, spatial presence and
+background locations, spatial blocks, a 100-m grid, known
 habitat-inventory dates, and an example environmental raster.</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span><span class="st">"aves_small"</span>, package <span class="op">=</span> <span class="st">"sdmhelpers"</span><span class="op">)</span></span>
@@ -131,10 +152,7 @@ habitat-inventory dates, and an example environmental raster.</p>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">egv_file</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/system.file.html" class="external-link">system.file</a></span><span class="op">(</span><span class="st">"extdata"</span>,</span>
 <span>                        <span class="st">"example_egv.tif"</span>,</span>
-<span>                        package <span class="op">=</span> <span class="st">"sdmhelpers"</span><span class="op">)</span></span>
-<span></span>
-<span><span class="va">egv_file</span></span>
-<span><span class="co">#&gt; [1] "/home/runner/work/_temp/Library/sdmhelpers/extdata/example_egv.tif"</span></span></code></pre></div>
+<span>                        package <span class="op">=</span> <span class="st">"sdmhelpers"</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="simple-target-group-bias-surface">Simple target-group bias surface<a class="anchor" aria-label="anchor" href="#simple-target-group-bias-surface"></a>
@@ -146,13 +164,13 @@ drawing background data from the same biased sampling domain can reduce
 the contrast between presence and background sampling processes <span class="citation">(<a href="#ref-phillips2009">Phillips et al.
 2009</a>)</span>.</p>
 <p>Here, one species from <code>aves_small</code> is treated as the
-focal species and all remaining species form the target group. The focal
-species is chosen programmatically as the species with the largest
-number of records so that the example does not depend on a particular
-species name.</p>
+focal species while all species form the target group. For this example,
+the focal species is chosen programmatically as the species with the
+largest number of records so that the example does not depend on a
+particular species name.</p>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">target_species</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span></span>
-<span>  <span class="fu"><a href="https://rdrr.io/r/base/sort.html" class="external-link">sort</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/table.html" class="external-link">table</a></span><span class="op">(</span><span class="va">aves_small</span><span class="op">$</span><span class="va">species</span><span class="op">)</span>, decreasing <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="va">target_species</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rspatial.github.io/terra/reference/names.html" class="external-link">names</a></span><span class="op">(</span></span>
+<span>  <span class="fu"><a href="https://rspatial.github.io/terra/reference/sort.html" class="external-link">sort</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/table.html" class="external-link">table</a></span><span class="op">(</span><span class="va">aves_small</span><span class="op">$</span><span class="va">species</span><span class="op">)</span>, decreasing <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
 <span><span class="op">)</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span></span>
 <span></span>
 <span><span class="va">target_species</span></span>
@@ -163,13 +181,13 @@ species name.</p>
 spatial bias surface, records are therefore counted by grid cell and
 supplied to <code><a href="../reference/kde_surface.html">kde_surface()</a></code> as weights.</p>
 <div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">tg_counts</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/aggregate.html" class="external-link">aggregate</a></span><span class="op">(</span></span>
-<span>  <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>n_records <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">target_group</span><span class="op">)</span><span class="op">)</span><span class="op">)</span>,</span>
+<code class="sourceCode R"><span><span class="va">tg_counts</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rspatial.github.io/terra/reference/aggregate.html" class="external-link">aggregate</a></span><span class="op">(</span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>n_records <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fu"><a href="https://rspatial.github.io/terra/reference/dimensions.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">target_group</span><span class="op">)</span><span class="op">)</span><span class="op">)</span>,</span>
 <span>  by <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>id100 <span class="op">=</span> <span class="va">target_group</span><span class="op">$</span><span class="va">id100</span><span class="op">)</span>,</span>
 <span>  FUN <span class="op">=</span> <span class="va">sum</span></span>
 <span><span class="op">)</span></span>
 <span></span>
-<span><span class="va">idx</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/match.html" class="external-link">match</a></span><span class="op">(</span><span class="va">tg_counts</span><span class="op">$</span><span class="va">id100</span>, <span class="va">points100</span><span class="op">$</span><span class="va">id</span><span class="op">)</span></span>
+<span><span class="va">idx</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rspatial.github.io/terra/reference/match.html" class="external-link">match</a></span><span class="op">(</span><span class="va">tg_counts</span><span class="op">$</span><span class="va">id100</span>, <span class="va">points100</span><span class="op">$</span><span class="va">id</span><span class="op">)</span></span>
 <span><span class="va">keep</span> <span class="op">&lt;-</span> <span class="op">!</span><span class="fu"><a href="https://rdrr.io/r/base/NA.html" class="external-link">is.na</a></span><span class="op">(</span><span class="va">idx</span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">tg_points</span> <span class="op">&lt;-</span> <span class="va">points100</span><span class="op">[</span><span class="va">idx</span><span class="op">[</span><span class="va">keep</span><span class="op">]</span>, <span class="op">]</span></span>
@@ -233,16 +251,16 @@ Unweighted target-group sampling-bias surface.
 </div>
 <p>This simple approach assumes that every target-group record is
 equally informative about the sampling process affecting the focal
-species. The next sections relax that assumption.</p>
+species. The following sections relax that assumption.</p>
 </div>
 <div class="section level2">
-<h2 id="phenologically-weighted-target-group">Phenologically weighted target group<a class="anchor" aria-label="anchor" href="#phenologically-weighted-target-group"></a>
+<h2 id="phenologically-weighted-target-group">Phenologically weighted target-group<a class="anchor" aria-label="anchor" href="#phenologically-weighted-target-group"></a>
 </h2>
 <p>Species observed by the same people or recording scheme may
-nevertheless have different seasonal detectability. A species recorded
-mainly in winter, for example, may provide little information about
-sampling effort relevant to a species recorded mainly during late
-spring.</p>
+nevertheless have different seasonal detectability and/or availability.
+A species recorded mainly in winter, for example, may provide little
+information about sampling effort relevant to a species recorded mainly
+during late spring.</p>
 <p><code><a href="../reference/phenology_overlap_weights.html">phenology_overlap_weights()</a></code> estimates the overlap
 between the day-of-year distribution of a focal species and each
 comparison species using kernel-density overlap. The overlap coefficient
@@ -253,17 +271,17 @@ describes the common area of two estimated distributions <span class="citation">
 <span><span class="va">bird_dates</span><span class="op">$</span><span class="va">DoY</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/as.POSIXlt.html" class="external-link">as.POSIXlt</a></span><span class="op">(</span><span class="va">bird_dates</span><span class="op">$</span><span class="va">date</span><span class="op">)</span><span class="op">$</span><span class="va">yday</span> <span class="op">+</span> <span class="fl">1L</span></span>
 <span></span>
 <span><span class="va">target_code</span> <span class="op">&lt;-</span> <span class="va">bird_dates</span><span class="op">$</span><span class="va">code</span><span class="op">[</span></span>
-<span>  <span class="fu"><a href="https://rdrr.io/r/base/match.html" class="external-link">match</a></span><span class="op">(</span><span class="va">target_species</span>, <span class="va">bird_dates</span><span class="op">$</span><span class="va">species</span><span class="op">)</span></span>
+<span>  <span class="fu"><a href="https://rspatial.github.io/terra/reference/match.html" class="external-link">match</a></span><span class="op">(</span><span class="va">target_species</span>, <span class="va">bird_dates</span><span class="op">$</span><span class="va">species</span><span class="op">)</span></span>
 <span><span class="op">]</span></span>
 <span></span>
 <span><span class="va">target_code</span></span>
 <span><span class="co">#&gt; [1] "STRALU"</span></span></code></pre></div>
 <p>We then estimate phenological overlap between the focal species and
-every species in the remaining target group.</p>
+every species in the target group.</p>
 <div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">phenology_weights</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/phenology_overlap_weights.html">phenology_overlap_weights</a></span><span class="op">(</span></span>
 <span>  target <span class="op">=</span> <span class="va">bird_dates</span>,</span>
-<span>  group <span class="op">=</span> <span class="va">bird_dates</span><span class="op">[</span><span class="va">bird_dates</span><span class="op">$</span><span class="va">species</span> <span class="op">!=</span> <span class="va">target_species</span>, <span class="op">]</span>,</span>
+<span>  group <span class="op">=</span> <span class="va">bird_dates</span>,</span>
 <span>  target_code <span class="op">=</span> <span class="va">target_code</span>,</span>
 <span>  target_id <span class="op">=</span> <span class="st">"code"</span>,</span>
 <span>  group_id <span class="op">=</span> <span class="st">"code"</span>,</span>
@@ -277,16 +295,17 @@ every species in the remaining target group.</p>
 <span>  <span class="fu"><a href="https://rdrr.io/r/base/order.html" class="external-link">order</a></span><span class="op">(</span><span class="va">phenology_weights</span><span class="op">$</span><span class="va">weight</span>, decreasing <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span>,</span>
 <span><span class="op">]</span></span>
 <span><span class="co">#&gt;          code   overlap    weight</span></span>
-<span><span class="co">#&gt; GLAPAS GLAPAS 0.8256341 0.2990645</span></span>
-<span><span class="co">#&gt; STRURA STRURA 0.8053464 0.2917158</span></span>
-<span><span class="co">#&gt; BUTBUT BUTBUT 0.6383454 0.2312240</span></span>
-<span><span class="co">#&gt; CIRAER CIRAER 0.4913965 0.1779956</span></span></code></pre></div>
+<span><span class="co">#&gt; STRALU STRALU 1.0000000 0.2659064</span></span>
+<span><span class="co">#&gt; GLAPAS GLAPAS 0.8256341 0.2195414</span></span>
+<span><span class="co">#&gt; STRURA STRURA 0.8053464 0.2141467</span></span>
+<span><span class="co">#&gt; BUTBUT BUTBUT 0.6383454 0.1697401</span></span>
+<span><span class="co">#&gt; CIRAER CIRAER 0.4913965 0.1306654</span></span></code></pre></div>
 <p>The returned <code>weight</code> values sum to one across comparison
 species with valid overlap estimates. Here, each target-group
 observation receives the weight of its species. Records are then summed
 within 100-m cells before KDE smoothing.</p>
 <div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">target_group_p</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/merge.html" class="external-link">merge</a></span><span class="op">(</span></span>
+<code class="sourceCode R"><span><span class="va">target_group_p</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rspatial.github.io/terra/reference/merge.html" class="external-link">merge</a></span><span class="op">(</span></span>
 <span>  <span class="va">target_group</span>,</span>
 <span>  <span class="va">phenology_weights</span><span class="op">[</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"code"</span>, <span class="st">"weight"</span><span class="op">)</span><span class="op">]</span>,</span>
 <span>  by <span class="op">=</span> <span class="st">"code"</span>,</span>
@@ -298,13 +317,13 @@ within 100-m cells before KDE smoothing.</p>
 <span>    <span class="op">!</span><span class="fu"><a href="https://rdrr.io/r/base/NA.html" class="external-link">is.na</a></span><span class="op">(</span><span class="va">target_group_p</span><span class="op">$</span><span class="va">id100</span><span class="op">)</span>,</span>
 <span><span class="op">]</span></span>
 <span></span>
-<span><span class="va">tg_weighted</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/aggregate.html" class="external-link">aggregate</a></span><span class="op">(</span></span>
+<span><span class="va">tg_weighted</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rspatial.github.io/terra/reference/aggregate.html" class="external-link">aggregate</a></span><span class="op">(</span></span>
 <span>  <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>weight <span class="op">=</span> <span class="va">target_group_p</span><span class="op">$</span><span class="va">weight</span><span class="op">)</span>,</span>
 <span>  by <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>id100 <span class="op">=</span> <span class="va">target_group_p</span><span class="op">$</span><span class="va">id100</span><span class="op">)</span>,</span>
 <span>  FUN <span class="op">=</span> <span class="va">sum</span></span>
 <span><span class="op">)</span></span>
 <span></span>
-<span><span class="va">idx</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/match.html" class="external-link">match</a></span><span class="op">(</span><span class="va">tg_weighted</span><span class="op">$</span><span class="va">id100</span>, <span class="va">points100</span><span class="op">$</span><span class="va">id</span><span class="op">)</span></span>
+<span><span class="va">idx</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rspatial.github.io/terra/reference/match.html" class="external-link">match</a></span><span class="op">(</span><span class="va">tg_weighted</span><span class="op">$</span><span class="va">id100</span>, <span class="va">points100</span><span class="op">$</span><span class="va">id</span><span class="op">)</span></span>
 <span><span class="va">keep</span> <span class="op">&lt;-</span> <span class="op">!</span><span class="fu"><a href="https://rdrr.io/r/base/NA.html" class="external-link">is.na</a></span><span class="op">(</span><span class="va">idx</span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">tg_points_weighted</span> <span class="op">&lt;-</span> <span class="va">points100</span><span class="op">[</span><span class="va">idx</span><span class="op">[</span><span class="va">keep</span><span class="op">]</span>, <span class="op">]</span></span>
@@ -315,7 +334,7 @@ within 100-m cells before KDE smoothing.</p>
 <span>  weight_field <span class="op">=</span> <span class="st">"weight"</span>,</span>
 <span>  sigma <span class="op">=</span> <span class="fl">3000</span>,</span>
 <span>  ref <span class="op">=</span> <span class="va">example_grid</span>,</span>
-<span>  normalize <span class="op">=</span> <span class="st">"meanG"</span>,</span>
+<span>  normalize <span class="op">=</span> <span class="st">"pdf"</span>,</span>
 <span>  mask <span class="op">=</span> <span class="cn">TRUE</span></span>
 <span><span class="op">)</span></span>
 <span></span>
@@ -335,7 +354,7 @@ the focal species’ seasonal sampling process were more or less likely to
 have been collected.</p>
 </div>
 <div class="section level2">
-<h2 id="seasonally-and-dielly-weighted-target-group">Seasonally and dielly weighted target group<a class="anchor" aria-label="anchor" href="#seasonally-and-dielly-weighted-target-group"></a>
+<h2 id="seasonally-and-dielly-weighted-target-group">Seasonally and dielly weighted target-group<a class="anchor" aria-label="anchor" href="#seasonally-and-dielly-weighted-target-group"></a>
 </h2>
 <p>For taxa whose detectability varies both seasonally and through the
 day, seasonal overlap alone may be insufficient.
@@ -348,8 +367,8 @@ statistics and <span class="citation">Ridout and Linkie (<a href="#ref-ridout200
 activity patterns.</p>
 <p>The bird dataset contains date-time observations. Because this is an
 introductory vignette, the example uses the focal species with the
-largest number of valid date-times and compares it with the 20 most
-frequently recorded remaining species.</p>
+largest number of valid date-times and compares it with every
+target-groups’ species.</p>
 <div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span></span>
 <span><span class="va">target_species_torus</span> <span class="op">&lt;-</span> <span class="va">target_species</span></span>
@@ -389,7 +408,7 @@ often be used in a final analysis.</p>
 <span>  <span class="fu"><a href="https://rdrr.io/r/base/order.html" class="external-link">order</a></span><span class="op">(</span><span class="va">torus_overlap</span><span class="op">$</span><span class="va">overlap</span>, decreasing <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span>,</span>
 <span><span class="op">]</span></span>
 <span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">torus_overlap</span>, <span class="fl">10</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rspatial.github.io/terra/reference/headtail.html" class="external-link">head</a></span><span class="op">(</span><span class="va">torus_overlap</span>, <span class="fl">10</span><span class="op">)</span></span>
 <span><span class="co">#&gt;     reference            comparison n_reference n_comparison    overlap status</span></span>
 <span><span class="co">#&gt; 4 Strix aluco           Strix aluco        3004         3004 1.00000000     OK</span></span>
 <span><span class="co">#&gt; 5 Strix aluco       Strix uralensis        3004          137 0.86931899     OK</span></span>
@@ -409,7 +428,7 @@ group, they can be normalized across comparison species.</p>
 <span>  <span class="va">torus_overlap</span><span class="op">$</span><span class="va">overlap</span><span class="op">[</span><span class="va">ok</span><span class="op">]</span> <span class="op">/</span></span>
 <span>  <span class="fu"><a href="https://rdrr.io/r/base/sum.html" class="external-link">sum</a></span><span class="op">(</span><span class="va">torus_overlap</span><span class="op">$</span><span class="va">overlap</span><span class="op">[</span><span class="va">ok</span><span class="op">]</span><span class="op">)</span></span>
 <span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span></span>
+<span><span class="fu"><a href="https://rspatial.github.io/terra/reference/headtail.html" class="external-link">head</a></span><span class="op">(</span></span>
 <span>  <span class="va">torus_overlap</span><span class="op">[</span></span>
 <span>    <span class="fu"><a href="https://rdrr.io/r/base/order.html" class="external-link">order</a></span><span class="op">(</span><span class="va">torus_overlap</span><span class="op">$</span><span class="va">weight</span>, decreasing <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span>,</span>
 <span>    <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"comparison"</span>, <span class="st">"overlap"</span>, <span class="st">"weight"</span><span class="op">)</span></span>
@@ -480,8 +499,8 @@ phenological weights above.</p>
 <p>Sometimes the dates of a survey or habitat inventory are known, while
 the species itself was not necessarily recorded during that survey. In
 this case, <code><a href="../reference/doy_kde_weights.html">doy_kde_weights()</a></code> can estimate how closely each
-inventory date corresponds to the seasonal activity distribution of a
-target species.</p>
+inventory date corresponds to the seasonal registration-activity
+distribution of a target species.</p>
 <p>The function estimates a wrapped day-of-year KDE from reference dates
 and evaluates that density at another set of dates. The wrapped
 construction reduces the artificial separation between observations near
@@ -492,8 +511,8 @@ old-growth forest specialist species, thus specifically searched during
 habitat inventories, as the reference seasonal distribution and weights
 the dates in <code>habitat_inventories</code>.</p>
 <div class="sourceCode" id="cb17"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">bryophyta_species</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span></span>
-<span>  <span class="fu"><a href="https://rdrr.io/r/base/sort.html" class="external-link">sort</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/table.html" class="external-link">table</a></span><span class="op">(</span><span class="va">bryophyta_one</span><span class="op">$</span><span class="va">species</span><span class="op">)</span>, decreasing <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="va">bryophyta_species</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rspatial.github.io/terra/reference/names.html" class="external-link">names</a></span><span class="op">(</span></span>
+<span>  <span class="fu"><a href="https://rspatial.github.io/terra/reference/sort.html" class="external-link">sort</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/table.html" class="external-link">table</a></span><span class="op">(</span><span class="va">bryophyta_one</span><span class="op">$</span><span class="va">species</span><span class="op">)</span>, decreasing <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
 <span><span class="op">)</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span></span>
 <span></span>
 <span><span class="va">reference_dates</span> <span class="op">&lt;-</span> <span class="va">bryophyta_one</span><span class="op">$</span><span class="va">date</span><span class="op">[</span></span>
@@ -517,7 +536,7 @@ the estimated reference density is relative to density values across the
 seasonal cycle. They are relative phenological correspondence scores
 rather than occurrence probabilities.</p>
 <div class="sourceCode" id="cb18"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/stats/aggregate.html" class="external-link">aggregate</a></span><span class="op">(</span></span>
+<code class="sourceCode R"><span><span class="fu"><a href="https://rspatial.github.io/terra/reference/aggregate.html" class="external-link">aggregate</a></span><span class="op">(</span></span>
 <span>  <span class="va">phenology_weight</span> <span class="op">~</span> <span class="va">habitat_type</span>,</span>
 <span>  data <span class="op">=</span> <span class="va">weighted_inventories</span>,</span>
 <span>  FUN <span class="op">=</span> <span class="va">mean</span></span>
@@ -532,7 +551,7 @@ rather than occurrence probabilities.</p>
 <p>The estimated seasonal reference curve can also be inspected
 directly.</p>
 <div class="sourceCode" id="cb19"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span></span>
+<code class="sourceCode R"><span><span class="fu"><a href="https://rspatial.github.io/terra/reference/plot.html" class="external-link">plot</a></span><span class="op">(</span></span>
 <span>  <span class="va">inventory_weights</span><span class="op">$</span><span class="va">density</span><span class="op">$</span><span class="va">x</span>,</span>
 <span>  <span class="va">inventory_weights</span><span class="op">$</span><span class="va">density</span><span class="op">$</span><span class="va">y</span>,</span>
 <span>  type <span class="op">=</span> <span class="st">"l"</span>,</span>
@@ -540,9 +559,9 @@ directly.</p>
 <span>  ylab <span class="op">=</span> <span class="st">"Estimated reference density"</span></span>
 <span><span class="op">)</span></span></code></pre></div>
 <div class="figure">
-<img src="introduction_files/figure-html/inventory-density-1.png" class="r-plt" alt="Estimated seasonal activity curve used for weighting known inventory dates." width="672"><p class="caption">
-Estimated seasonal activity curve used for weighting known inventory
-dates.
+<img src="introduction_files/figure-html/inventory-density-1.png" class="r-plt" alt="Estimated seasonal registration-activity curve used for weighting known inventory dates." width="672"><p class="caption">
+Estimated seasonal registration-activity curve used for weighting known
+inventory dates.
 </p>
 </div>
 </div>
@@ -575,7 +594,7 @@ and independent spatial polygons.</p>
 <span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">block_id</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/sets.html" class="external-link">setdiff</a></span><span class="op">(</span></span>
-<span>  <span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">example_independent_blocks</span><span class="op">)</span>,</span>
+<span>  <span class="fu"><a href="https://rspatial.github.io/terra/reference/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">example_independent_blocks</span><span class="op">)</span>,</span>
 <span>  <span class="fu"><a href="https://rdrr.io/r/base/attr.html" class="external-link">attr</a></span><span class="op">(</span><span class="va">example_independent_blocks</span>, <span class="st">"sf_column"</span><span class="op">)</span></span>
 <span><span class="op">)</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span></span>
 <span></span>
@@ -660,10 +679,10 @@ and can be used directly for subsetting.</p>
 <span><span class="va">bg_train</span> <span class="op">&lt;-</span> <span class="va">example_background</span><span class="op">[</span><span class="op">!</span><span class="va">independent</span><span class="op">$</span><span class="va">bg_selected_idx</span>, <span class="op">]</span></span>
 <span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span></span>
-<span>  pres_train <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">pres_train</span><span class="op">)</span>,</span>
-<span>  pres_test <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">pres_test</span><span class="op">)</span>,</span>
-<span>  bg_train <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">bg_train</span><span class="op">)</span>,</span>
-<span>  bg_test <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">bg_test</span><span class="op">)</span></span>
+<span>  pres_train <span class="op">=</span> <span class="fu"><a href="https://rspatial.github.io/terra/reference/dimensions.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">pres_train</span><span class="op">)</span>,</span>
+<span>  pres_test <span class="op">=</span> <span class="fu"><a href="https://rspatial.github.io/terra/reference/dimensions.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">pres_test</span><span class="op">)</span>,</span>
+<span>  bg_train <span class="op">=</span> <span class="fu"><a href="https://rspatial.github.io/terra/reference/dimensions.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">bg_train</span><span class="op">)</span>,</span>
+<span>  bg_test <span class="op">=</span> <span class="fu"><a href="https://rspatial.github.io/terra/reference/dimensions.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">bg_test</span><span class="op">)</span></span>
 <span><span class="op">)</span></span>
 <span><span class="co">#&gt; pres_train  pres_test   bg_train    bg_test </span></span>
 <span><span class="co">#&gt;       2084        694      30043       9957</span></span></code></pre></div>
@@ -707,9 +726,9 @@ variables.</p>
 <p>For a compact vignette example, a subset of the training background
 is used to construct an <code><a href="https://consbiol-unibern.github.io/SDMtune/reference/SWD-class.html" class="external-link">SDMtune::SWD</a></code> object.</p>
 <div class="sourceCode" id="cb25"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">42</span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">1</span><span class="op">)</span></span>
 <span></span>
-<span><span class="va">bg_screen</span> <span class="op">&lt;-</span> <span class="va">bg_train</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/sample.html" class="external-link">sample.int</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">bg_train</span><span class="op">)</span>, <span class="fl">5000</span><span class="op">)</span>, <span class="op">]</span></span>
+<span><span class="va">bg_screen</span> <span class="op">&lt;-</span> <span class="va">bg_train</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/sample.html" class="external-link">sample.int</a></span><span class="op">(</span><span class="fu"><a href="https://rspatial.github.io/terra/reference/dimensions.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">bg_train</span><span class="op">)</span>, <span class="fl">5000</span><span class="op">)</span>, <span class="op">]</span></span>
 <span></span>
 <span><span class="va">train_swd</span> <span class="op">&lt;-</span> <span class="fu">SDMtune</span><span class="fu">::</span><span class="fu"><a href="https://consbiol-unibern.github.io/SDMtune/reference/prepareSWD.html" class="external-link">prepareSWD</a></span><span class="op">(</span></span>
 <span>  species <span class="op">=</span> <span class="st">"example_species"</span>,</span>
@@ -720,12 +739,12 @@ is used to construct an <code><a href="https://consbiol-unibern.github.io/SDMtun
 <span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Extracting predictor information for <span style="color: #00BB00;">presence</span> locations</span></span>
 <span><span class="co">#&gt; Warning: <span style="color: #BBBB00;">!</span> <span style="color: #0000BB;">2009</span> locations are NA for some environmental variables and have been</span></span>
 <span><span class="co">#&gt;   discarded</span></span>
-<span><span class="co">#&gt; <span style="color: #00BB00;">✔</span> Extracting predictor information for <span style="color: #00BB00;">presence</span> locations <span style="color: #B2B2B2;">[43ms]</span></span></span>
+<span><span class="co">#&gt; <span style="color: #00BB00;">✔</span> Extracting predictor information for <span style="color: #00BB00;">presence</span> locations <span style="color: #B2B2B2;">[29ms]</span></span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Extracting predictor information for <span style="color: #00BB00;">absence/background</span> locations</span></span>
-<span><span class="co">#&gt; Warning: <span style="color: #BBBB00;">!</span> <span style="color: #0000BB;">4776</span> locations are NA for some environmental variables and have been</span></span>
+<span><span class="co">#&gt; Warning: <span style="color: #BBBB00;">!</span> <span style="color: #0000BB;">4761</span> locations are NA for some environmental variables and have been</span></span>
 <span><span class="co">#&gt;   discarded</span></span>
-<span><span class="co">#&gt; <span style="color: #00BB00;">✔</span> Extracting predictor information for <span style="color: #00BB00;">absence/background</span> locations <span style="color: #B2B2B2;">[170ms]</span></span></span>
+<span><span class="co">#&gt; <span style="color: #00BB00;">✔</span> Extracting predictor information for <span style="color: #00BB00;">absence/background</span> locations <span style="color: #B2B2B2;">[91ms]</span></span></span>
 <span><span class="co">#&gt; </span></span></code></pre></div>
 <p>The environmental-domain check is added by supplying
 <code>env</code>.</p>
@@ -747,13 +766,13 @@ is used to construct an <code><a href="https://consbiol-unibern.github.io/SDMtun
 <code>diagnostics</code> component provides the standard deviation and
 failure reason for every evaluated predictor/subset combination.</p>
 <div class="sourceCode" id="cb27"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">variance_screen</span><span class="op">$</span><span class="va">diagnostics</span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="fu"><a href="https://rspatial.github.io/terra/reference/headtail.html" class="external-link">head</a></span><span class="op">(</span><span class="va">variance_screen</span><span class="op">$</span><span class="va">diagnostics</span><span class="op">)</span></span>
 <span><span class="co">#&gt;      check    subset variable n_finite        sd failed reason</span></span>
-<span><span class="co">#&gt; 1 training       all  egv_280      299 1.7877959  FALSE passed</span></span>
-<span><span class="co">#&gt; 2 training       all  egv_293      299 2.1531393  FALSE passed</span></span>
-<span><span class="co">#&gt; 3 training       all  egv_302      299 1.5895812  FALSE passed</span></span>
-<span><span class="co">#&gt; 4 training       all  egv_385      299 0.5944876  FALSE passed</span></span>
-<span><span class="co">#&gt; 5 training       all  egv_400      299 0.8052472  FALSE passed</span></span>
+<span><span class="co">#&gt; 1 training       all  egv_280      314 1.7145963  FALSE passed</span></span>
+<span><span class="co">#&gt; 2 training       all  egv_293      314 2.0859101  FALSE passed</span></span>
+<span><span class="co">#&gt; 3 training       all  egv_302      314 1.5297335  FALSE passed</span></span>
+<span><span class="co">#&gt; 4 training       all  egv_385      314 0.7250362  FALSE passed</span></span>
+<span><span class="co">#&gt; 5 training       all  egv_400      314 0.8009791  FALSE passed</span></span>
 <span><span class="co">#&gt; 6 training presences  egv_280       75 1.5562103  FALSE passed</span></span></code></pre></div>
 </div>
 <div class="section level2">
@@ -763,7 +782,7 @@ failure reason for every evaluated predictor/subset combination.</p>
 software. The following compact example fits a <code>maxnet</code> model
 after the independent split created above. Only predictors retained by
 the variance screen are used.</p>
-<p>First extract environmental values for the training and
+<p>First, extract environmental values for the training and
 independent-testing locations.</p>
 <div class="sourceCode" id="cb28"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">training_set</span> <span class="op">&lt;-</span> <span class="fu">SDMtune</span><span class="fu">::</span><span class="fu"><a href="https://consbiol-unibern.github.io/SDMtune/reference/prepareSWD.html" class="external-link">prepareSWD</a></span><span class="op">(</span></span>
@@ -775,12 +794,12 @@ independent-testing locations.</p>
 <span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Extracting predictor information for <span style="color: #00BB00;">presence</span> locations</span></span>
 <span><span class="co">#&gt; Warning: <span style="color: #BBBB00;">!</span> <span style="color: #0000BB;">2009</span> locations are NA for some environmental variables and have been</span></span>
 <span><span class="co">#&gt;   discarded</span></span>
-<span><span class="co">#&gt; <span style="color: #00BB00;">✔</span> Extracting predictor information for <span style="color: #00BB00;">presence</span> locations <span style="color: #B2B2B2;">[27ms]</span></span></span>
+<span><span class="co">#&gt; <span style="color: #00BB00;">✔</span> Extracting predictor information for <span style="color: #00BB00;">presence</span> locations <span style="color: #B2B2B2;">[16ms]</span></span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Extracting predictor information for <span style="color: #00BB00;">absence/background</span> locations</span></span>
 <span><span class="co">#&gt; Warning: <span style="color: #BBBB00;">!</span> <span style="color: #0000BB;">28679</span> locations are NA for some environmental variables and have been</span></span>
 <span><span class="co">#&gt;   discarded</span></span>
-<span><span class="co">#&gt; <span style="color: #00BB00;">✔</span> Extracting predictor information for <span style="color: #00BB00;">absence/background</span> locations <span style="color: #B2B2B2;">[65ms]</span></span></span>
+<span><span class="co">#&gt; <span style="color: #00BB00;">✔</span> Extracting predictor information for <span style="color: #00BB00;">absence/background</span> locations <span style="color: #B2B2B2;">[41ms]</span></span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="va">training_set</span><span class="op">=</span><span class="fu">SDMtune</span><span class="fu">::</span><span class="fu"><a href="https://consbiol-unibern.github.io/SDMtune/reference/addSamplesToBg.html" class="external-link">addSamplesToBg</a></span><span class="op">(</span><span class="va">training_set</span><span class="op">)</span></span>
 <span></span>
@@ -793,11 +812,11 @@ independent-testing locations.</p>
 <span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Extracting predictor information for <span style="color: #00BB00;">presence</span> locations</span></span>
 <span><span class="co">#&gt; Warning: <span style="color: #BBBB00;">!</span> <span style="color: #0000BB;">613</span> locations are NA for some environmental</span></span>
 <span><span class="co">#&gt; variables and have been discarded</span></span>
-<span><span class="co">#&gt; <span style="color: #00BB00;">✔</span> Extracting predictor information for <span style="color: #00BB00;">presence</span> locations <span style="color: #B2B2B2;">[25ms]</span></span></span>
+<span><span class="co">#&gt; <span style="color: #00BB00;">✔</span> Extracting predictor information for <span style="color: #00BB00;">presence</span> locations <span style="color: #B2B2B2;">[16ms]</span></span></span>
 <span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Extracting predictor information for <span style="color: #00BB00;">absence/background</span> locations</span></span>
 <span><span class="co">#&gt; Warning: <span style="color: #BBBB00;">!</span> <span style="color: #0000BB;">8890</span> locations are NA for some environmental variables and have been</span></span>
 <span><span class="co">#&gt;   discarded</span></span>
-<span><span class="co">#&gt; <span style="color: #00BB00;">✔</span> Extracting predictor information for <span style="color: #00BB00;">absence/background</span> locations <span style="color: #B2B2B2;">[48ms]</span></span></span>
+<span><span class="co">#&gt; <span style="color: #00BB00;">✔</span> Extracting predictor information for <span style="color: #00BB00;">absence/background</span> locations <span style="color: #B2B2B2;">[33ms]</span></span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="va">testing_set</span><span class="op">=</span><span class="fu">SDMtune</span><span class="fu">::</span><span class="fu"><a href="https://consbiol-unibern.github.io/SDMtune/reference/addSamplesToBg.html" class="external-link">addSamplesToBg</a></span><span class="op">(</span><span class="va">testing_set</span><span class="op">)</span></span></code></pre></div>
 <p>Fit the model using presences (<code>1</code>) and background
@@ -827,13 +846,13 @@ negative, and the resulting TSS should be interpreted as
 presence-background discrimination rather than classification accuracy
 against known true absences.</p>
 <div class="sourceCode" id="cb30"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">p_pos</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/predict.html" class="external-link">predict</a></span><span class="op">(</span></span>
+<code class="sourceCode R"><span><span class="va">p_pos</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rspatial.github.io/terra/reference/predict.html" class="external-link">predict</a></span><span class="op">(</span></span>
 <span>  <span class="va">maxnet_model</span>,</span>
 <span>  newdata <span class="op">=</span> <span class="va">testing_set</span><span class="op">@</span><span class="va">data</span><span class="op">[</span><span class="va">testing_set</span><span class="op">@</span><span class="va">pa</span> <span class="op">==</span> <span class="fl">1</span>, <span class="op">]</span>,</span>
 <span>  type <span class="op">=</span> <span class="st">"cloglog"</span></span>
 <span><span class="op">)</span></span>
 <span></span>
-<span><span class="va">p_neg</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/predict.html" class="external-link">predict</a></span><span class="op">(</span></span>
+<span><span class="va">p_neg</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rspatial.github.io/terra/reference/predict.html" class="external-link">predict</a></span><span class="op">(</span></span>
 <span>  <span class="va">maxnet_model</span>,</span>
 <span>  newdata <span class="op">=</span> <span class="va">testing_set</span><span class="op">@</span><span class="va">data</span><span class="op">[</span><span class="va">testing_set</span><span class="op">@</span><span class="va">pa</span> <span class="op">==</span> <span class="fl">0</span>, <span class="op">]</span>,</span>
 <span>  type <span class="op">=</span> <span class="st">"cloglog"</span></span>
@@ -857,8 +876,8 @@ matrix is required.</p>
 <span><span class="va">background_class</span> <span class="op">&lt;-</span> <span class="va">p_neg</span> <span class="op">&gt;=</span> <span class="va">threshold</span></span>
 <span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span></span>
-<span>  sensitivity <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/mean.html" class="external-link">mean</a></span><span class="op">(</span><span class="va">presence_class</span><span class="op">)</span>,</span>
-<span>  background_specificity <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/mean.html" class="external-link">mean</a></span><span class="op">(</span><span class="op">!</span><span class="va">background_class</span><span class="op">)</span></span>
+<span>  sensitivity <span class="op">=</span> <span class="fu"><a href="https://rspatial.github.io/terra/reference/summarize-generics.html" class="external-link">mean</a></span><span class="op">(</span><span class="va">presence_class</span><span class="op">)</span>,</span>
+<span>  background_specificity <span class="op">=</span> <span class="fu"><a href="https://rspatial.github.io/terra/reference/summarize-generics.html" class="external-link">mean</a></span><span class="op">(</span><span class="op">!</span><span class="va">background_class</span><span class="op">)</span></span>
 <span><span class="op">)</span></span>
 <span><span class="co">#&gt;            sensitivity background_specificity </span></span>
 <span><span class="co">#&gt;              0.8765432              0.6623037</span></span></code></pre></div>
@@ -890,7 +909,7 @@ partitions. Because the example coordinates are in the projected LKS-92
 using projected X and Y coordinates rather than geographic longitude and
 latitude.</p>
 <p>The resulting fold identifiers are supplied to
-<code>ENMevaluate()</code> as user-defined partitions. This makes it
+<code><a href="https://jamiemkass.github.io/ENMeval/reference/ENMevaluate.html" class="external-link">ENMevaluate()</a></code> as user-defined partitions. This makes it
 possible to use the same spatial groups for both presence and background
 observations while retaining explicit control over the cross-validation
 design.</p>
@@ -924,7 +943,7 @@ complexity.</p>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; *** Running ENMeval v2.0.6 with maxnet from maxnet package v0.1.4 ***</span></span>
 <span><span class="co">#&gt;   |                                                                              |                                                                      |   0%  |                                                                              |========                                                              |  11%  |                                                                              |================                                                      |  22%  |                                                                              |=======================                                               |  33%  |                                                                              |===============================                                       |  44%  |                                                                              |=======================================                               |  56%  |                                                                              |===============================================                       |  67%  |                                                                              |======================================================                |  78%  |                                                                              |==============================================================        |  89%  |                                                                              |======================================================================| 100%</span></span>
-<span><span class="co">#&gt; ENMevaluate completed in 0 minutes 9 seconds.</span></span></code></pre></div>
+<span><span class="co">#&gt; ENMevaluate completed in 0 minutes 6.6 seconds.</span></span></code></pre></div>
 <p>The argument <code>user.eval = tss_user_eval</code> adds TSS as a
 custom evaluation metric. For every cross-validation fold,
 <code>ENMeval</code> supplies predictions for training occurrences,
@@ -961,15 +980,15 @@ the fold-level statistics and can be inspected with:</p>
 <div class="sourceCode" id="cb35"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">ENMeval</span><span class="fu">::</span><span class="fu"><a href="https://jamiemkass.github.io/ENMeval/reference/eval.results.html" class="external-link">eval.results</a></span><span class="op">(</span><span class="va">pirmais</span><span class="op">)</span></span>
 <span><span class="co">#&gt;   fc  rm    tune.args auc.train cbi.train auc.diff.avg auc.diff.sd auc.val.avg</span></span>
-<span><span class="co">#&gt; 1  L 0.5  fc.L_rm.0.5 0.8714644        NA   0.07945571 0.022225179   0.8265177</span></span>
-<span><span class="co">#&gt; 2  Q 0.5  fc.Q_rm.0.5 0.8733380        NA   0.07111201 0.049360782   0.8213454</span></span>
-<span><span class="co">#&gt; 3 LQ 0.5 fc.LQ_rm.0.5 0.8911901        NA   0.06291696 0.033143431   0.8538288</span></span>
-<span><span class="co">#&gt; 4  L 1.0    fc.L_rm.1 0.8714923        NA   0.07545736 0.013420158   0.8314957</span></span>
+<span><span class="co">#&gt; 1  L 0.5  fc.L_rm.0.5 0.8714644        NA   0.07945517 0.022225244   0.8265177</span></span>
+<span><span class="co">#&gt; 2  Q 0.5  fc.Q_rm.0.5 0.8733380        NA   0.07111489 0.049356734   0.8213454</span></span>
+<span><span class="co">#&gt; 3 LQ 0.5 fc.LQ_rm.0.5 0.8911808        NA   0.06290713 0.033151576   0.8538288</span></span>
+<span><span class="co">#&gt; 4  L 1.0    fc.L_rm.1 0.8714923        NA   0.07545160 0.013408658   0.8314957</span></span>
 <span><span class="co">#&gt; 5  Q 1.0    fc.Q_rm.1 0.8733705        NA   0.07406087 0.043186846   0.8354066</span></span>
-<span><span class="co">#&gt; 6 LQ 1.0   fc.LQ_rm.1 0.8910181        NA   0.06465631 0.027427750   0.8523159</span></span>
+<span><span class="co">#&gt; 6 LQ 1.0   fc.LQ_rm.1 0.8910181        NA   0.06465808 0.027427198   0.8523159</span></span>
 <span><span class="co">#&gt; 7  L 2.0    fc.L_rm.2 0.8714086        NA   0.06784453 0.002873099   0.8394832</span></span>
-<span><span class="co">#&gt; 8  Q 2.0    fc.Q_rm.2 0.8728591        NA   0.07260982 0.043543630   0.8340900</span></span>
-<span><span class="co">#&gt; 9 LQ 2.0   fc.LQ_rm.2 0.8893073        NA   0.06888881 0.019434704   0.8475060</span></span>
+<span><span class="co">#&gt; 8  Q 2.0    fc.Q_rm.2 0.8728591        NA   0.07261047 0.043548790   0.8340900</span></span>
+<span><span class="co">#&gt; 9 LQ 2.0   fc.LQ_rm.2 0.8893073        NA   0.06882316 0.019308799   0.8475699</span></span>
 <span><span class="co">#&gt;   auc.val.sd cbi.val.avg cbi.val.sd or.10p.avg  or.10p.sd or.mtp.avg  or.mtp.sd</span></span>
 <span><span class="co">#&gt; 1 0.06515442          NA         NA  0.1725146 0.20266343 0.02631579 0.03038686</span></span>
 <span><span class="co">#&gt; 2 0.06393752          NA         NA  0.1600877 0.08605885 0.02631579 0.03038686</span></span>
@@ -979,7 +998,7 @@ the fold-level statistics and can be inspected with:</p>
 <span><span class="co">#&gt; 6 0.05359382          NA         NA  0.1586257 0.21004351 0.02631579 0.03038686</span></span>
 <span><span class="co">#&gt; 7 0.05489059          NA         NA  0.1461988 0.15069121 0.01315789 0.02631579</span></span>
 <span><span class="co">#&gt; 8 0.06719898          NA         NA  0.1337719 0.05425139 0.01315789 0.02631579</span></span>
-<span><span class="co">#&gt; 9 0.05747581          NA         NA  0.1593567 0.17662852 0.01315789 0.02631579</span></span>
+<span><span class="co">#&gt; 9 0.05741302          NA         NA  0.1593567 0.17662852 0.01315789 0.02631579</span></span>
 <span><span class="co">#&gt;   sens.val.avg sens.val.sd spec.val.avg spec.val.sd thr.val.avg thr.val.sd</span></span>
 <span><span class="co">#&gt; 1    0.7733918  0.10818713    0.8029094  0.12455619   0.4409865  0.2682956</span></span>
 <span><span class="co">#&gt; 2    0.8004386  0.11579280    0.8009088  0.09314715   0.3590680  0.2133038</span></span>
@@ -1017,18 +1036,18 @@ the fold-level statistics and can be inspected with:</p>
 <span><span class="co">#&gt;       tune.args fold   auc.val   auc.diff cbi.val     or.mtp     or.10p</span></span>
 <span><span class="co">#&gt; 1   fc.L_rm.0.5    1 0.8137455 0.06758341      NA 0.05263158 0.05263158</span></span>
 <span><span class="co">#&gt; 2   fc.L_rm.0.5    2 0.7601151 0.11275353      NA 0.05263158 0.47368421</span></span>
-<span><span class="co">#&gt; 3   fc.L_rm.0.5    3 0.8159626 0.06759129      NA 0.00000000 0.05263158</span></span>
-<span><span class="co">#&gt; 4   fc.L_rm.0.5    4 0.9162476 0.06989459      NA 0.00000000 0.11111111</span></span>
+<span><span class="co">#&gt; 3   fc.L_rm.0.5    3 0.8159626 0.06759836      NA 0.00000000 0.05263158</span></span>
+<span><span class="co">#&gt; 4   fc.L_rm.0.5    4 0.9162476 0.06988538      NA 0.00000000 0.11111111</span></span>
 <span><span class="co">#&gt; 5   fc.Q_rm.0.5    1 0.7478283 0.13250706      NA 0.05263158 0.05263158</span></span>
-<span><span class="co">#&gt; 6   fc.Q_rm.0.5    2 0.8356908 0.01907880      NA 0.05263158 0.26315789</span></span>
+<span><span class="co">#&gt; 6   fc.Q_rm.0.5    2 0.8356908 0.01909032      NA 0.05263158 0.26315789</span></span>
 <span><span class="co">#&gt; 7   fc.Q_rm.0.5    3 0.8014197 0.08629100      NA 0.00000000 0.15789474</span></span>
 <span><span class="co">#&gt; 8   fc.Q_rm.0.5    4 0.9004430 0.04657120      NA 0.00000000 0.16666667</span></span>
 <span><span class="co">#&gt; 9  fc.LQ_rm.0.5    1 0.7976495 0.11064213      NA 0.05263158 0.10526316</span></span>
-<span><span class="co">#&gt; 10 fc.LQ_rm.0.5    2 0.8462993 0.03540573      NA 0.05263158 0.52631579</span></span>
-<span><span class="co">#&gt; 11 fc.LQ_rm.0.5    3 0.8447022 0.05812976      NA 0.00000000 0.05263158</span></span>
-<span><span class="co">#&gt; 12 fc.LQ_rm.0.5    4 0.9266643 0.04749023      NA 0.00000000 0.05555556</span></span>
+<span><span class="co">#&gt; 10 fc.LQ_rm.0.5    2 0.8462993 0.03538269      NA 0.05263158 0.52631579</span></span>
+<span><span class="co">#&gt; 11 fc.LQ_rm.0.5    3 0.8447022 0.05812269      NA 0.00000000 0.05263158</span></span>
+<span><span class="co">#&gt; 12 fc.LQ_rm.0.5    4 0.9266643 0.04748102      NA 0.00000000 0.05555556</span></span>
 <span><span class="co">#&gt; 13    fc.L_rm.1    1 0.8127236 0.06845567      NA 0.05263158 0.05263158</span></span>
-<span><span class="co">#&gt; 14    fc.L_rm.1    2 0.7780428 0.09555171      NA 0.05263158 0.42105263</span></span>
+<span><span class="co">#&gt; 14    fc.L_rm.1    2 0.7780428 0.09552867      NA 0.05263158 0.42105263</span></span>
 <span><span class="co">#&gt; 15    fc.L_rm.1    3 0.8156163 0.06796583      NA 0.00000000 0.05263158</span></span>
 <span><span class="co">#&gt; 16    fc.L_rm.1    4 0.9196001 0.06985625      NA 0.00000000 0.11111111</span></span>
 <span><span class="co">#&gt; 17    fc.Q_rm.1    1 0.7514052 0.12973318      NA 0.05263158 0.05263158</span></span>
@@ -1037,19 +1056,19 @@ the fold-level statistics and can be inspected with:</p>
 <span><span class="co">#&gt; 20    fc.Q_rm.1    4 0.8996049 0.04643335      NA 0.00000000 0.16666667</span></span>
 <span><span class="co">#&gt; 21   fc.LQ_rm.1    1 0.8019928 0.10503296      NA 0.05263158 0.05263158</span></span>
 <span><span class="co">#&gt; 22   fc.LQ_rm.1    2 0.8352796 0.04556141      NA 0.05263158 0.47368421</span></span>
-<span><span class="co">#&gt; 23   fc.LQ_rm.1    3 0.8440097 0.05822846      NA 0.00000000 0.05263158</span></span>
+<span><span class="co">#&gt; 23   fc.LQ_rm.1    3 0.8440097 0.05823553      NA 0.00000000 0.05263158</span></span>
 <span><span class="co">#&gt; 24   fc.LQ_rm.1    4 0.9279813 0.04980242      NA 0.00000000 0.05555556</span></span>
 <span><span class="co">#&gt; 25    fc.L_rm.2    1 0.8111906 0.06934893      NA 0.05263158 0.05263158</span></span>
 <span><span class="co">#&gt; 26    fc.L_rm.2    2 0.8059211 0.06752365      NA 0.00000000 0.36842105</span></span>
 <span><span class="co">#&gt; 27    fc.L_rm.2    3 0.8194252 0.06395902      NA 0.00000000 0.05263158</span></span>
 <span><span class="co">#&gt; 28    fc.L_rm.2    4 0.9213961 0.07054652      NA 0.00000000 0.11111111</span></span>
 <span><span class="co">#&gt; 29    fc.Q_rm.2    1 0.7554931 0.12778216      NA 0.05263158 0.05263158</span></span>
-<span><span class="co">#&gt; 30    fc.Q_rm.2    2 0.8822368 0.03033592      NA 0.00000000 0.15789474</span></span>
-<span><span class="co">#&gt; 31    fc.Q_rm.2    3 0.8014197 0.08583149      NA 0.00000000 0.15789474</span></span>
+<span><span class="co">#&gt; 30    fc.Q_rm.2    2 0.8822368 0.03032440      NA 0.00000000 0.15789474</span></span>
+<span><span class="co">#&gt; 31    fc.Q_rm.2    3 0.8014197 0.08584563      NA 0.00000000 0.15789474</span></span>
 <span><span class="co">#&gt; 32    fc.Q_rm.2    4 0.8972102 0.04648970      NA 0.00000000 0.16666667</span></span>
-<span><span class="co">#&gt; 33   fc.LQ_rm.2    1 0.8050588 0.09781580      NA 0.05263158 0.05263158</span></span>
+<span><span class="co">#&gt; 33   fc.LQ_rm.2    1 0.8053143 0.09756031      NA 0.05263158 0.05263158</span></span>
 <span><span class="co">#&gt; 34   fc.LQ_rm.2    2 0.8162007 0.05982469      NA 0.00000000 0.42105263</span></span>
-<span><span class="co">#&gt; 35   fc.LQ_rm.2    3 0.8374307 0.06186656      NA 0.00000000 0.05263158</span></span>
+<span><span class="co">#&gt; 35   fc.LQ_rm.2    3 0.8374307 0.06185949      NA 0.00000000 0.05263158</span></span>
 <span><span class="co">#&gt; 36   fc.LQ_rm.2    4 0.9313338 0.05604817      NA 0.00000000 0.11111111</span></span>
 <span><span class="co">#&gt;      tss.val    thr.val  sens.val  spec.val tss.train</span></span>
 <span><span class="co">#&gt; 1  0.5840572 0.41914114 0.8947368 0.6893204 0.6287021</span></span>
