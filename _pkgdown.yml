@@ -2,6 +2,8 @@ url: https://aavotins.github.io/sdmhelpers/
 template:
   bootstrap: 5
   math-rendering: mathjax
+  params:
+    google_site_verification: "vb0due4UoAVz-dECbiq0IPT_bmTpTysinD2OGpGK4aE"
 home:
   title: sdmhelpers
   description: |
