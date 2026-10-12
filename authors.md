@@ -11,13 +11,13 @@ Source:
 [`DESCRIPTION`](https://github.com/aavotins/sdmhelpers/blob/master/DESCRIPTION)
 
 Avotins A (2026). *sdmhelpers: Helper Functions for Species Distribution
-Modelling*. R package version 0.0.0.9000,
+Modelling*. R package version 0.1.0,
 <https://github.com/aavotins/sdmhelpers>.
 
     @Manual{,
       title = {sdmhelpers: Helper Functions for Species Distribution Modelling},
       author = {Andris Avotins},
       year = {2026},
-      note = {R package version 0.0.0.9000},
+      note = {R package version 0.1.0},
       url = {https://github.com/aavotins/sdmhelpers},
     }

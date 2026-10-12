@@ -9,7 +9,7 @@ contains tools for constructing sampling-bias surfaces from target-group
 records, weighting target-group observations by seasonal or combined
 seasonal and diel overlap, selecting complete spatial folds for
 independent testing, screening environmental predictors, and evaluating
-predictions using the true skill statistic (TSS).
+predictions using the True Skill Statistic (TSS).
 
 Presence-only SDMs are sensitive to differences between the sampling
 process that generated species observations and the process used to
@@ -81,7 +81,7 @@ data("bryophyta_one", package = "sdmhelpers")
 data("habitat_inventories", package = "sdmhelpers")
 data("points100", package = "sdmhelpers")
 data("example_grid", package = "sdmhelpers")
-example_grid=terra::unwrap(example_grid)
+example_grid <- terra::unwrap(example_grid)
 data("example_presences", package = "sdmhelpers")
 data("example_background", package = "sdmhelpers")
 data("example_independent_blocks", package = "sdmhelpers")
@@ -184,10 +184,10 @@ described by Silverman ([1986](#ref-silverman1986)).
 
 The example grid uses EPSG:3059, whose map units are metres, so
 `sigma = 3000` corresponds to a Gaussian bandwidth of 3 km. With
-`normalize = "pdf"`, the resulting surface is normalized to integrate to
-one and represents the spatial probability density of target-group
-sampling effort. It can therefore be used as a relative sampling-bias
-surface for background sampling.
+`normalize = "pdf"`, the resulting surface is normalised to integrate to
+one and represents a probability-density-scaled surface of the spatial
+distribution of target-group records. It can therefore be used as a
+relative proxy sampling-bias surface for background sampling.
 
 ``` r
 
@@ -200,6 +200,7 @@ simple_bias <- kde_surface(
   mask = TRUE
 )
 
+options(scipen = 999)
 terra::plot(simple_bias, main = "Simple target-group bias")
 ```
 
@@ -215,17 +216,21 @@ following sections relax that assumption.
 ## Phenologically weighted target-group
 
 Species observed by the same people or recording scheme may nevertheless
-have different seasonal detectability and/or availability. A species
+have different seasonal detectability, availability, or both. A species
 recorded mainly in winter, for example, may provide little information
 about sampling effort relevant to a species recorded mainly during late
 spring.
 
-[`phenology_overlap_weights()`](https://aavotins.github.io/sdmhelpers/reference/phenology_overlap_weights.md)
-estimates the overlap between the day-of-year distribution of a focal
-species and each comparison species using kernel-density overlap. The
-overlap coefficient describes the common area of two estimated
-distributions ([Pastore 2018](#ref-pastore2018); [Pastore and Calcagnì
-2019](#ref-pastore2019)).
+phenology_overlap_weights() estimates overlap between species’
+day-of-year distributions using overlapping::overlap() ([Pastore and
+Calcagnì 2019](#ref-pastore2019)). This approach provides compatibility
+with conventional kernel-density overlap estimation ([Pastore
+2018](#ref-pastore2018)). However, because day of year is treated as a
+linear variable, observations near the end and beginning of the calendar
+year are not considered adjacent. For species with observation periods
+spanning this boundary, torus_overlap_many() provides an alternative
+based on circular kernel-density estimation with constant (e.g. midday)
+value for the time of day.
 
 First, day of year is added to the bird records.
 
@@ -242,8 +247,8 @@ target_code
 #> [1] "STRALU"
 ```
 
-We then estimate phenological overlap between the focal species and
-every species in the target group.
+We then estimate phenological overlap between the focal species
+(synonymous to target-species) and every species in the target-group.
 
 ``` r
 
@@ -313,6 +318,7 @@ phenology_bias <- kde_surface(
   mask = TRUE
 )
 
+options(scipen = 999)
 terra::plot(
   phenology_bias,
   main = "Phenologically weighted target-group bias"
@@ -330,7 +336,7 @@ purpose is to describe where observations relevant to the focal species’
 seasonal sampling process were more or less likely to have been
 collected.
 
-## Seasonally and dielly weighted target-group
+## Target-group weighting by seasonal and diel overlap
 
 For taxa whose detectability varies both seasonally and through the day,
 seasonal overlap alone may be insufficient.
@@ -338,24 +344,33 @@ seasonal overlap alone may be insufficient.
 represents season and time of day as two circular dimensions and
 estimates overlap on a two-dimensional torus. Circular treatment is
 important because both annual and daily cycles wrap around their
-endpoints; see Mardia and Jupp ([2000](#ref-mardia2000)) for directional
+endpoints; see Mardia and Jupp ([1999](#ref-mardia2000)) for directional
 statistics and Ridout and Linkie ([2009](#ref-ridout2009)) for overlap
 estimation of diel activity patterns.
 
-The bird dataset contains date-time observations. Because this is an
-introductory vignette, the example uses the focal species with the
-largest number of valid date-times and compares it with every
-target-groups’ species.
+The bird dataset contains date-time observations. For this introductory
+example, we select the focal species with the largest number of valid
+date-time records and compare its seasonal and diel observation
+distributions with those of every species in the target group (including
+the focal species itself).
 
 ``` r
 
+comparison_data <- aves_small[
+  !is.na(aves_small$date_time),
+  ,
+  drop = FALSE
+]
 
-target_species_torus <- target_species
+target_species_torus <- names(
+  sort(table(comparison_data$species), decreasing = TRUE)
+)[1]
 
-reference_data <- aves_small[aves_small$species == target_species_torus & 
-                               !is.na(aves_small$date_time),]
-
-comparison_data <- aves_small[!is.na(aves_small$date_time),]
+reference_data <- comparison_data[
+  comparison_data$species == target_species_torus,
+  ,
+  drop = FALSE
+]
 
 reference_data$obs_date <- as.Date(reference_data$date_time)
 reference_data$obs_time <- hms::as_hms(reference_data$date_time)
@@ -400,12 +415,12 @@ head(torus_overlap, 10)
 #> 1 Strix aluco           Buteo buteo        3004         2095 0.03477199     OK
 ```
 
-The overlap coefficient ranges from zero to one for normalized
+The overlap coefficient ranges from zero to one for normalised
 densities. A large value indicates that a comparison species has a
 seasonal-diel observation distribution similar to the focal species.
 
 To use these coefficients as relative species weights in a target group,
-they can be normalized across comparison species.
+they can be normalised across comparison species.
 
 ``` r
 
@@ -457,14 +472,19 @@ torus_result <- torus_overlap_many(
   return_density = TRUE
 )
 
-ggplot(torus_result$density,aes(x = seasonal_position_days,
-                          y = decimal_hour,
-                          fill = comparison_density)) +
+ggplot(torus_result$density,
+       aes(
+         x = seasonal_position_days,
+         y = decimal_hour,
+         fill = comparison_density
+         )
+       ) +
   geom_raster() +
   facet_wrap(~ comparison) +
   scale_y_continuous(breaks = seq(0, 24, by = 3)) +
   viridis::scale_fill_viridis() +
-  labs(x = "Seasonal position (days from 1 January)",
+  labs(
+    x = "Seasonal position (days from 1 January)",
        y = "Time of day",
        fill = "Density",
        title = "Species-specific registration activity") +
@@ -476,9 +496,13 @@ ggplot(torus_result$density,aes(x = seasonal_position_days,
 ``` r
 
 
-ggplot(torus_result$density,aes(x = seasonal_position_days,
-                          y = decimal_hour,
-                          fill = shared_density)) +
+ggplot(torus_result$density,
+       aes(
+         x = seasonal_position_days,
+         y = decimal_hour,
+         fill = shared_density
+         )
+       ) +
   geom_raster() +
   facet_wrap(~ comparison) +
   scale_y_continuous(breaks = seq(0, 24, by = 3)) +
@@ -486,7 +510,11 @@ ggplot(torus_result$density,aes(x = seasonal_position_days,
   labs(x = "Seasonal position (days from 1 January)",
        y = "Time of day",
        fill = "Density",
-       title = "Registration activity overlap with STRALU") +
+       title = paste0(
+         "Registration activity overlap with ", 
+         target_species_torus
+         )
+       ) +
   theme_bw()
 ```
 
@@ -501,17 +529,17 @@ this case,
 can estimate how closely each inventory date corresponds to the seasonal
 registration-activity distribution of a target species.
 
-The function estimates a wrapped day-of-year KDE from reference dates
-and evaluates that density at another set of dates. The wrapped
-construction reduces the artificial separation between observations near
-the end and beginning of a year. Bandwidth controls the degree of
-smoothing, as in conventional KDE ([Silverman
-1986](#ref-silverman1986)).
+The function estimates a circular approximation to a day-of-year KDE
+from the reference dates and evaluates that density at another set of
+dates. Circularity is approximated by periodically extending the
+reference observations across the seasonal boundary, which reduces
+boundary effects between observations near the end and beginning of the
+year. Bandwidth controls the degree of smoothing, as in conventional KDE
+([Silverman 1986](#ref-silverman1986)).
 
-The example below uses one bryophyte species, which is considered
-old-growth forest specialist species, thus specifically searched during
-habitat inventories, as the reference seasonal distribution and weights
-the dates in `habitat_inventories`.
+The example below uses one bryophyte species considered to be an
+old-growth forest specialist and therefore specifically searched for
+during habitat inventories.
 
 ``` r
 
@@ -736,15 +764,18 @@ presence_only_selection$summary$prop_selected
 
 ## Screening predictor variance
 
-Predictors with zero or extremely small variance in the data available
-for model fitting can create numerical problems and cannot meaningfully
-contribute to estimating an environmental response.
+Predictors that are constant across all data used for model fitting
+cannot provide an estimable environmental response. Low variance within
+an individual subset, however, does not necessarily imply that a
+predictor is uninformative: for example, a predictor may be constant
+among presences but variable among background records.
 [`screen_egv_variance()`](https://aavotins.github.io/sdmhelpers/reference/screen_egv_variance.md)
-checks predictor variance across several SDM-relevant subsets rather
-than only across the complete dataset.
+therefore distinguishes the presence, background, and combined-data
+checks and records which checks contribute to predictor selection.
 
 The example environmental raster contains five ecogeographical
-variables.
+variables. The presence and background locations were split spatially
+into independent training and testing sets in the preceding section.
 
 ``` r
 
@@ -761,45 +792,108 @@ env
 #> max values  :   3.70894,  7.054723,  8.359298,  5.206886, 11.300995
 ```
 
-For a compact vignette example, a subset of the training background is
-used to construct an
-[`SDMtune::SWD`](https://consbiol-unibern.github.io/SDMtune/reference/SWD-class.html)
-object.
+We first prepare the training and independent-testing datasets **once**,
+using the same environmental predictors.
+[`SDMtune::prepareSWD()`](https://consbiol-unibern.github.io/SDMtune/reference/prepareSWD.html)
+removes locations with missing values in any supplied environmental
+layer. Many example records fall outside the raster’s complete-data
+domain; the counts below show how many observations remain after
+extraction. All subsequent checks, fold assignments, model fitting, and
+evaluation use these retained records.
 
 ``` r
 
-set.seed(1)
-
-bg_screen <- bg_train[sample.int(nrow(bg_train), 5000), ]
-
-train_swd <- SDMtune::prepareSWD(
+training_set <- SDMtune::prepareSWD(
   species = "example_species",
   p = pres_train,
-  a = bg_screen,
-  env = env
+  a = bg_train,
+  env = env,
+  verbose = FALSE
 )
-#> ℹ Extracting predictor information for presence locations
 #> Warning: ! 2009 locations are NA for some environmental variables and have been
 #>   discarded
-#> ✔ Extracting predictor information for presence locations [45ms]
-#> 
-#> ℹ Extracting predictor information for absence/background locations
-#> Warning: ! 4761 locations are NA for some environmental variables and have been
+#> Warning: ! 28679 locations are NA for some environmental variables and have been
 #>   discarded
-#> ✔ Extracting predictor information for absence/background locations [171ms]
-#> 
+
+testing_set <- SDMtune::prepareSWD(
+  species = "example_species",
+  p = pres_test,
+  a = bg_test,
+  env = env,
+  verbose = FALSE
+)
+#> Warning: ! 613 locations are NA for some environmental
+#> variables and have been discarded
+#> Warning: ! 8890 locations are NA for some environmental variables and have been
+#>   discarded
+
+c(
+  training_presences = sum(training_set@pa == 1),
+  training_background = sum(training_set@pa == 0),
+  testing_presences = sum(testing_set@pa == 1),
+  testing_background = sum(testing_set@pa == 0)
+)
+#>  training_presences training_background   testing_presences  testing_background 
+#>                  75                1364                  81                1067
 ```
 
-The environmental-domain check is added by supplying `env`.
+For spatial cross-validation, we assign folds **after** the
+environmental-value extraction so that the fold identifiers correspond
+exactly to rows in the training `SWD` object.
+[`ENMeval::get.block()`](https://jamiemkass.github.io/ENMeval/reference/partitions.html)
+expects longitude-latitude coordinates; the projected EPSG:3059
+coordinates are therefore converted to EPSG:4326 solely for constructing
+the folds. This does not change the predictor values stored in
+`training_set`.
+
+``` r
+
+as_lonlat <- function(coords) {
+  pts <- sf::st_as_sf(
+    coords,
+    coords = c("X", "Y"),
+    crs = 3059
+  )
+  ll <- sf::st_coordinates(sf::st_transform(pts, 4326))
+  data.frame(lon = ll[, 1], lat = ll[, 2])
+}
+
+pres_idx <- training_set@pa == 1
+bg_idx <- training_set@pa == 0
+
+block_folds <- ENMeval::get.block(
+  occs = as_lonlat(training_set@coords[pres_idx, , drop = FALSE]),
+  bg = as_lonlat(training_set@coords[bg_idx, , drop = FALSE])
+)
+```
+
+The screen checks presences, backgrounds, and their combination both
+across all training records and within each cross-validation training
+partition. Because `bg_folds` is supplied, the corresponding held-out
+background fold is excluded as well as the presence fold. Presence-only
+checks are retained as diagnostics but do not automatically remove
+predictors. The independent test set can also be diagnosed, while the
+default leakage-safe settings ensure that its values do not affect
+`keep` or `remove`.
 
 ``` r
 
 variance_screen <- screen_egv_variance(
-  train = train_swd,
+  train = training_set,
+  test = testing_set,
+  occ_folds = block_folds$occs.grp,
+  bg_folds = block_folds$bg.grp,
   env = env,
-  env_sample_n = 5000,
-  seed = 1,
+  env_sample_n = 5000L,
+  seed = 1L,
   sd_tol = 0,
+  check_presences = TRUE,
+  check_background = TRUE,
+  check_combined = TRUE,
+  presence_affects_selection = FALSE,
+  include_test_bg = FALSE,
+  check_test = TRUE,
+  test_affects_selection = FALSE,
   verbose = FALSE
 )
 
@@ -809,19 +903,23 @@ variance_screen$remove
 #> character(0)
 ```
 
-A predictor is retained only if it passes every requested check. The
-`diagnostics` component provides the standard deviation and failure
-reason for every evaluated predictor/subset combination.
+A predictor is removed only if it fails at least one check marked
+`used_for_selection = TRUE`. A failed diagnostic-only check remains
+visible in `diagnostics` but does not affect predictor selection. Even
+though this example calculates diagnostic-only checks on the independent
+test, their results must not be used to revise the chosen predictor set
+or model. In a final analysis, it is preferable not to inspect the
+held-out test diagnostics until the model specification has been fixed.
 
 ``` r
 
 head(variance_screen$diagnostics)
 #>      check subset data_source      group fold used_for_selection variable
-#> 1 training    all    training  presences <NA>               TRUE  egv_280
-#> 2 training    all    training  presences <NA>               TRUE  egv_293
-#> 3 training    all    training  presences <NA>               TRUE  egv_302
-#> 4 training    all    training  presences <NA>               TRUE  egv_385
-#> 5 training    all    training  presences <NA>               TRUE  egv_400
+#> 1 training    all    training  presences <NA>              FALSE  egv_280
+#> 2 training    all    training  presences <NA>              FALSE  egv_293
+#> 3 training    all    training  presences <NA>              FALSE  egv_302
+#> 4 training    all    training  presences <NA>              FALSE  egv_385
+#> 5 training    all    training  presences <NA>              FALSE  egv_400
 #> 6 training    all    training background <NA>               TRUE  egv_280
 #>   n_finite        sd failed reason
 #> 1       75 1.5562103  FALSE passed
@@ -829,395 +927,685 @@ head(variance_screen$diagnostics)
 #> 3       75 1.1651248  FALSE passed
 #> 4       75 0.4201842  FALSE passed
 #> 5       75 0.4363026  FALSE passed
-#> 6      239 1.5235595  FALSE passed
+#> 6     1364 1.5236134  FALSE passed
+
+subset(
+  variance_screen$diagnostics,
+  failed & !used_for_selection,
+  select = c(check, subset, group, variable, sd, reason)
+)
+#> [1] check    subset   group    variable sd       reason  
+#> <0 rows> (or 0-length row.names)
+```
+
+The random environmental-domain check samples raster cells independently
+of the observed training background locations. It does **not** resample
+the background records already contained in `training_set`.
+
+A common predictor set screened across all CV partitions is convenient
+for this introductory example. For an unbiased assessment of a pipeline
+that selects predictors anew, that selection must instead be performed
+separately inside each CV training partition.
+
+``` r
+
+subset(
+  variance_screen$diagnostics,
+  check == "cv_training",
+  select = c(
+    check, subset, group, fold,
+    variable, sd, failed, used_for_selection
+  )
+)
+#>          check          subset      group fold variable        sd failed
+#> 16 cv_training held_out_fold_2  presences    2  egv_280 1.5974080  FALSE
+#> 17 cv_training held_out_fold_2  presences    2  egv_293 1.7213387  FALSE
+#> 18 cv_training held_out_fold_2  presences    2  egv_302 1.1385672  FALSE
+#> 19 cv_training held_out_fold_2  presences    2  egv_385 0.3446358  FALSE
+#> 20 cv_training held_out_fold_2  presences    2  egv_400 0.1296358  FALSE
+#> 21 cv_training held_out_fold_2 background    2  egv_280 1.5930103  FALSE
+#> 22 cv_training held_out_fold_2 background    2  egv_293 1.6918404  FALSE
+#> 23 cv_training held_out_fold_2 background    2  egv_302 1.5554488  FALSE
+#> 24 cv_training held_out_fold_2 background    2  egv_385 0.4753539  FALSE
+#> 25 cv_training held_out_fold_2 background    2  egv_400 0.4171508  FALSE
+#> 26 cv_training held_out_fold_2   combined    2  egv_280 1.6497089  FALSE
+#> 27 cv_training held_out_fold_2   combined    2  egv_293 1.8766848  FALSE
+#> 28 cv_training held_out_fold_2   combined    2  egv_302 1.5449395  FALSE
+#> 29 cv_training held_out_fold_2   combined    2  egv_385 0.4672986  FALSE
+#> 30 cv_training held_out_fold_2   combined    2  egv_400 0.4049559  FALSE
+#> 31 cv_training held_out_fold_4  presences    4  egv_280 1.6395785  FALSE
+#> 32 cv_training held_out_fold_4  presences    4  egv_293 1.8506224  FALSE
+#> 33 cv_training held_out_fold_4  presences    4  egv_302 1.1297366  FALSE
+#> 34 cv_training held_out_fold_4  presences    4  egv_385 0.4651644  FALSE
+#> 35 cv_training held_out_fold_4  presences    4  egv_400 0.4948771  FALSE
+#> 36 cv_training held_out_fold_4 background    4  egv_280 1.5366295  FALSE
+#> 37 cv_training held_out_fold_4 background    4  egv_293 1.6757226  FALSE
+#> 38 cv_training held_out_fold_4 background    4  egv_302 1.5804242  FALSE
+#> 39 cv_training held_out_fold_4 background    4  egv_385 0.8740921  FALSE
+#> 40 cv_training held_out_fold_4 background    4  egv_400 0.9401085  FALSE
+#> 41 cv_training held_out_fold_4   combined    4  egv_280 1.5906969  FALSE
+#> 42 cv_training held_out_fold_4   combined    4  egv_293 1.8192609  FALSE
+#> 43 cv_training held_out_fold_4   combined    4  egv_302 1.5794229  FALSE
+#> 44 cv_training held_out_fold_4   combined    4  egv_385 0.8570493  FALSE
+#> 45 cv_training held_out_fold_4   combined    4  egv_400 0.9198140  FALSE
+#> 46 cv_training held_out_fold_3  presences    3  egv_280 1.5176560  FALSE
+#> 47 cv_training held_out_fold_3  presences    3  egv_293 1.7655457  FALSE
+#> 48 cv_training held_out_fold_3  presences    3  egv_302 1.2211444  FALSE
+#> 49 cv_training held_out_fold_3  presences    3  egv_385 0.3984288  FALSE
+#> 50 cv_training held_out_fold_3  presences    3  egv_400 0.4954987  FALSE
+#> 51 cv_training held_out_fold_3 background    3  egv_280 1.4932623  FALSE
+#> 52 cv_training held_out_fold_3 background    3  egv_293 1.5232976  FALSE
+#> 53 cv_training held_out_fold_3 background    3  egv_302 1.5333896  FALSE
+#> 54 cv_training held_out_fold_3 background    3  egv_385 0.7893809  FALSE
+#> 55 cv_training held_out_fold_3 background    3  egv_400 0.8197605  FALSE
+#> 56 cv_training held_out_fold_3   combined    3  egv_280 1.5475879  FALSE
+#> 57 cv_training held_out_fold_3   combined    3  egv_293 1.6529372  FALSE
+#> 58 cv_training held_out_fold_3   combined    3  egv_302 1.5358597  FALSE
+#> 59 cv_training held_out_fold_3   combined    3  egv_385 0.7766520  FALSE
+#> 60 cv_training held_out_fold_3   combined    3  egv_400 0.8083519  FALSE
+#> 61 cv_training held_out_fold_1  presences    1  egv_280 1.4495707  FALSE
+#> 62 cv_training held_out_fold_1  presences    1  egv_293 1.9947205  FALSE
+#> 63 cv_training held_out_fold_1  presences    1  egv_302 1.1715437  FALSE
+#> 64 cv_training held_out_fold_1  presences    1  egv_385 0.4494924  FALSE
+#> 65 cv_training held_out_fold_1  presences    1  egv_400 0.4938591  FALSE
+#> 66 cv_training held_out_fold_1 background    1  egv_280 1.4944325  FALSE
+#> 67 cv_training held_out_fold_1 background    1  egv_293 1.5744318  FALSE
+#> 68 cv_training held_out_fold_1 background    1  egv_302 1.5523231  FALSE
+#> 69 cv_training held_out_fold_1 background    1  egv_385 0.7867514  FALSE
+#> 70 cv_training held_out_fold_1 background    1  egv_400 0.8016187  FALSE
+#> 71 cv_training held_out_fold_1   combined    1  egv_280 1.5491069  FALSE
+#> 72 cv_training held_out_fold_1   combined    1  egv_293 1.7091390  FALSE
+#> 73 cv_training held_out_fold_1   combined    1  egv_302 1.5552666  FALSE
+#> 74 cv_training held_out_fold_1   combined    1  egv_385 0.7753450  FALSE
+#> 75 cv_training held_out_fold_1   combined    1  egv_400 0.7909909  FALSE
+#>    used_for_selection
+#> 16              FALSE
+#> 17              FALSE
+#> 18              FALSE
+#> 19              FALSE
+#> 20              FALSE
+#> 21               TRUE
+#> 22               TRUE
+#> 23               TRUE
+#> 24               TRUE
+#> 25               TRUE
+#> 26               TRUE
+#> 27               TRUE
+#> 28               TRUE
+#> 29               TRUE
+#> 30               TRUE
+#> 31              FALSE
+#> 32              FALSE
+#> 33              FALSE
+#> 34              FALSE
+#> 35              FALSE
+#> 36               TRUE
+#> 37               TRUE
+#> 38               TRUE
+#> 39               TRUE
+#> 40               TRUE
+#> 41               TRUE
+#> 42               TRUE
+#> 43               TRUE
+#> 44               TRUE
+#> 45               TRUE
+#> 46              FALSE
+#> 47              FALSE
+#> 48              FALSE
+#> 49              FALSE
+#> 50              FALSE
+#> 51               TRUE
+#> 52               TRUE
+#> 53               TRUE
+#> 54               TRUE
+#> 55               TRUE
+#> 56               TRUE
+#> 57               TRUE
+#> 58               TRUE
+#> 59               TRUE
+#> 60               TRUE
+#> 61              FALSE
+#> 62              FALSE
+#> 63              FALSE
+#> 64              FALSE
+#> 65              FALSE
+#> 66               TRUE
+#> 67               TRUE
+#> 68               TRUE
+#> 69               TRUE
+#> 70               TRUE
+#> 71               TRUE
+#> 72               TRUE
+#> 73               TRUE
+#> 74               TRUE
+#> 75               TRUE
 ```
 
 ## Fitting a small maxnet model
 
-The package is designed to support, rather than replace, SDM software.
-The following compact example fits a `maxnet` model after the
-independent split created above. Only predictors retained by the
-variance screen are used.
-
-First, extract environmental values for the training and
-independent-testing locations.
-
-``` r
-
-training_set <- SDMtune::prepareSWD(
-  species = "example_species",
-  p = pres_train,
-  a = bg_train,
-  env = env
-)
-#> ℹ Extracting predictor information for presence locations
-#> Warning: ! 2009 locations are NA for some environmental variables and have been
-#>   discarded
-#> ✔ Extracting predictor information for presence locations [27ms]
-#> 
-#> ℹ Extracting predictor information for absence/background locations
-#> Warning: ! 28679 locations are NA for some environmental variables and have been
-#>   discarded
-#> ✔ Extracting predictor information for absence/background locations [64ms]
-#> 
-training_set=SDMtune::addSamplesToBg(training_set)
-
-testing_set <- SDMtune::prepareSWD(
-  species = "example_species",
-  p = pres_test,
-  a = bg_test,
-  env = env
-)
-#> ℹ Extracting predictor information for presence locations
-#> Warning: ! 613 locations are NA for some environmental
-#> variables and have been discarded
-#> ✔ Extracting predictor information for presence locations [26ms]
-#> ℹ Extracting predictor information for absence/background locations
-#> Warning: ! 8890 locations are NA for some environmental variables and have been
-#>   discarded
-#> ✔ Extracting predictor information for absence/background locations [50ms]
-#> 
-testing_set=SDMtune::addSamplesToBg(testing_set)
-```
-
-Fit the model using presences (`1`) and background (`0`).
+`sdmhelpers` supports rather than replaces SDM software. Here we fit a
+small illustrative `maxnet` model to the training data using **only the
+predictors retained by the variance screen**. This model is for
+demonstration; the cross-validation example below can be used to compare
+alternative feature classes and regularisation multipliers before
+fitting a final model.
 
 ``` r
+
+selected_vars <- variance_screen$keep
+
+if (!length(selected_vars)) {
+  stop("No predictors passed variance screening.")
+}
 
 maxnet_model <- maxnet::maxnet(
   p = training_set@pa,
-  data = training_set@data
+  data = training_set@data[, selected_vars, drop = FALSE],
+  addsamplestobackground = TRUE
 )
 ```
+
+Following the conventional Maxent approach, presence locations not
+already represented in the background are additionally included as
+background samples during model fitting. This behaviour is enabled by
+`addsamplestobackground = TRUE`, which is also the default in `maxnet`.
+
+We do not separately call
+[`SDMtune::addSamplesToBg()`](https://consbiol-unibern.github.io/SDMtune/reference/addSamplesToBg.html)
+because `maxnet` handles this operation internally. Consequently, the
+original `training_set` object remains unchanged, and its presence and
+background records can be used consistently for subsequent evaluation
+and cross-validation.
+
+Importantly, this operation uses only the training data. Independent
+testing presences and background records remain withheld from model
+fitting.
 
 ## Evaluating models with TSS
 
-The true skill statistic is
+The true skill statistic (TSS) is defined as
 
-\\ \mathrm{TSS} = \mathrm{sensitivity} + \mathrm{specificity} - 1, \\
-
-and was proposed for SDM evaluation as an alternative to measures such
-as Cohen’s kappa ([Allouche et al. 2006](#ref-allouche2006)).
+\\ \mathrm{TSS} = \mathrm{sensitivity} + \mathrm{specificity} - 1. \\
 
 [`max_tss()`](https://aavotins.github.io/sdmhelpers/reference/max_tss.md)
-evaluates all unique finite prediction thresholds and returns the
-threshold that maximizes TSS together with sensitivity and specificity.
+evaluates candidate thresholds and returns the threshold that maximizes
+TSS, together with sensitivity and specificity. For presence-background
+data, background locations are not confirmed absences; thus the reported
+specificity is the proportion of background records classified as
+negative, and TSS should be interpreted as presence-background
+discrimination rather than classification accuracy against known
+absences ([Allouche et al. 2006](#ref-allouche2006)).
 
-For presence-background models, background locations are not confirmed
-absences. Consequently, the value reported as specificity is
-operationally the proportion of background records classified as
-negative, and the resulting TSS should be interpreted as
-presence-background discrimination rather than classification accuracy
-against known true absences.
+Critically, selecting a threshold using independent-test predictions and
+then reporting TSS on that same test set would yield a test-optimized
+estimate. Here we select the threshold using **training predictions
+only**, and then apply it unchanged to the withheld independent test.
+The resulting independent-test TSS is not optimized on test labels,
+although the threshold chosen on fitting data may be optimistic for the
+training sample itself.
 
 ``` r
 
-p_pos <- predict(
+train_p_pos <- predict(
   maxnet_model,
-  newdata = testing_set@data[testing_set@pa == 1, ],
+  newdata = training_set@data[
+    training_set@pa == 1, selected_vars, drop = FALSE
+  ],
   type = "cloglog"
 )
 
-p_neg <- predict(
+train_p_bg <- predict(
   maxnet_model,
-  newdata = testing_set@data[testing_set@pa == 0, ],
+  newdata = training_set@data[
+    training_set@pa == 0, selected_vars, drop = FALSE
+  ],
   type = "cloglog"
 )
 
-tss_result <- max_tss(
-  p_pos = p_pos,
-  p_neg = p_neg
-)
-
-tss_result
+training_tss <- max_tss(p_pos = train_p_pos, p_neg = train_p_bg)
+threshold <- unname(training_tss["threshold"])
+training_tss
 #>         tss   threshold sensitivity specificity 
-#>   0.5388469   0.2693770   0.8765432   0.6623037
+#>   0.7227370   0.1993446   0.9866667   0.7360704
 ```
 
-The selected threshold can then be used to convert continuous
-predictions into binary classifications if a binary map or confusion
-matrix is required.
-
 ``` r
 
-threshold <- unname(tss_result["threshold"])
+test_p_pos <- predict(
+  maxnet_model,
+  newdata = testing_set@data[
+    testing_set@pa == 1, selected_vars, drop = FALSE
+  ],
+  type = "cloglog"
+)
 
-presence_class <- p_pos >= threshold
-background_class <- p_neg >= threshold
+test_p_bg <- predict(
+  maxnet_model,
+  newdata = testing_set@data[
+    testing_set@pa == 0, selected_vars, drop = FALSE
+  ],
+  type = "cloglog"
+)
+
+independent_sensitivity <- mean(test_p_pos >= threshold)
+independent_background_specificity <- mean(test_p_bg < threshold)
 
 c(
-  sensitivity = mean(presence_class),
-  background_specificity = mean(!background_class)
+  threshold_from_training = threshold,
+  sensitivity = independent_sensitivity,
+  background_specificity = independent_background_specificity,
+  independent_TSS = independent_sensitivity +
+    independent_background_specificity - 1
 )
-#>            sensitivity background_specificity 
-#>              0.8765432              0.6623037
+#> threshold_from_training             sensitivity  background_specificity 
+#>               0.1993446               0.9012346               0.6269916 
+#>         independent_TSS 
+#>               0.5282261
 ```
+
+The same threshold can be applied to predictions at raster cells when a
+binary suitability map is needed. For an independent final evaluation,
+the threshold and all predictor-selection and tuning decisions should be
+fixed before the held-out test predictions are examined.
 
 ## Cross-validation TSS with ENMeval
 
-The independent testing set created above is reserved for evaluating the
-final model and should not be used during model tuning. Alternative
-model settings can instead be compared by cross-validation using only
-the training data. Spatially structured cross-validation is particularly
-useful when observations are spatially autocorrelated because it reduces
-spatial dependence between calibration and validation data and provides
-a more stringent assessment of spatial transferability than random
-partitioning ([Roberts et al. 2017](#ref-roberts2017)).
+The independent testing set created earlier is reserved for the final
+assessment of the fitted model. Model tuning instead uses spatial
+cross-validation of the training data, keeping the independent testing
+set out of predictor-selection and tuning decisions. Spatial resampling
+can reduce dependence between model calibration and validation
+observations when the intended prediction involves geographic transfer
+([Roberts et al. 2017](#ref-roberts2017)).
 
-ENMeval provides several approaches for partitioning occurrence and
-background records and for evaluating alternative Maxent and `maxnet`
-model settings ([Muscarella et al. 2014](#ref-muscarella2014); [Kass et
-al. 2021](#ref-kass2021)). In this example, the training records are
-divided into four geographically structured groups using
-[`ENMeval::get.block()`](https://jamiemkass.github.io/ENMeval/reference/partitions.html).
+`ENMeval` supports spatial partitions and multiple complexity settings
+for Maxent and `maxnet` models ([Muscarella et al.
+2014](#ref-muscarella2014); [Kass et al. 2021](#ref-kass2021)). We reuse
+the four presence and background fold assignments (`block_folds`)
+created in the predictor-screening section. These were calculated using
+the records remaining in `training_set` after environmental values were
+extracted, so their ordering matches the model inputs. There is no need
+to generate a second set of folds.
+
+For illustration, we compare three feature-class settings (linear, `L`;
+quadratic, `Q`; and linear plus quadratic, `LQ`) and three
+regularisation multipliers (0.5, 1, and 2). The regularisation
+multiplier controls the strength of model penalisation; thus, nine
+candidate settings are evaluated.
+
+**Important:** The predictor set used below is the one returned by
+[`screen_egv_variance()`](https://aavotins.github.io/sdmhelpers/reference/screen_egv_variance.md)
+in the preceding section. It is held constant across the candidate model
+settings for this introductory example.
 
 ``` r
 
-block_folds <- ENMeval::get.block(occ = training_set@coords[training_set@pa == 1, ], 
-                                  bg = training_set@coords[training_set@pa == 0, ])
+selected_vars <- variance_screen$keep
+
+if (length(selected_vars) == 0L) {
+  stop("No predictors passed variance screening.")
+}
+
+pres_idx <- training_set@pa == 1
+bg_idx <- training_set@pa == 0
+
+# The as_lonlat() helper and block_folds were defined in the preceding section.
+# ENMeval receives coordinates in the first two columns, followed by predictors.
+presences <- cbind(
+  as_lonlat(training_set@coords[pres_idx, , drop = FALSE]),
+  training_set@data[pres_idx, selected_vars, drop = FALSE]
+)
+
+background <- cbind(
+  as_lonlat(training_set@coords[bg_idx, , drop = FALSE]),
+  training_set@data[bg_idx, selected_vars, drop = FALSE]
+)
+
+stopifnot(
+  length(block_folds$occs.grp) == nrow(presences),
+  length(block_folds$bg.grp) == nrow(background)
+)
 ```
 
-The block method divides occurrence localities into four spatial groups
-and assigns background records to the corresponding geographic
-partitions. Because the example coordinates are in the projected LKS-92
-/ Latvia TM coordinate reference system, the partitions are defined
-using projected X and Y coordinates rather than geographic longitude and
-latitude.
-
-The resulting fold identifiers are supplied to
-[`ENMevaluate()`](https://jamiemkass.github.io/ENMeval/reference/ENMevaluate.html)
-as user-defined partitions. This makes it possible to use the same
-spatial groups for both presence and background observations while
-retaining explicit control over the cross-validation design.
-
-For this example, three feature-class combinations and three
-regularization multipliers are evaluated, producing nine candidate model
-settings. Linear (`L`), quadratic (`Q`), and combined linear-quadratic
-(`LQ`) feature classes control the shapes of fitted environmental
-responses, whereas the regularization multiplier controls the strength
-of penalization and therefore model complexity.
+Following the conventional Maxent approach, occurrence locations are
+additionally included among the background samples used for model
+fitting by setting `addsamplestobackground = TRUE`. This behavior is the
+default in both `maxnet` and ENMeval’s Maxnet implementation. During
+spatial cross-validation, only the training data for each partition
+should contribute to model fitting, while validation presences and
+backgrounds remain withheld for evaluation. The option
+`validation.bg = "partition"` additionally restricts validation
+comparisons to the background records assigned to the corresponding
+validation partition.
 
 ``` r
 
-presences=cbind(training_set@coords[training_set@pa == 1, ],
-                 training_set@data[training_set@pa == 1, ])
-background=cbind(training_set@coords[training_set@pa == 0, ],
-           training_set@data[training_set@pa == 0, ])
-pirmais <- ENMeval::ENMevaluate(occs = presences, 
-                       bg = background,
-                       algorithm = 'maxnet', 
-                       partitions = 'user', 
-                       user.grp=list(occs.grp=block_folds$occs.grp,
-                                     bg.grp=block_folds$bg.grp),
-                       tune.args = list(fc = c('L','Q','LQ'), 
-                                        rm = c(0.5,1,2)),
-                       other.settings=list(validation.bg='partition'),
-                       user.eval = tss_user_eval)
-#> Package ecospat is not installed, so Continuous Boyce Index (CBI) cannot be calculated.
-#> *** Running initial checks... ***
-#> * Please make sure that the user-specified partitions are spatial, else validation.bg should be set to "full". The "partition" option only makes sense when partitions represent different regions of the study extent. See ?ENMevaluate for details.
-#> * Variable values were input along with coordinates and not as raster data, so no raster predictions can be generated and AICc is calculated with background data for Maxent models.
-#> * Model evaluations with user-defined 4-fold cross validation...
-#> 
-#> *** Running ENMeval v2.0.6 with maxnet from maxnet package v0.1.4 ***
+enmeval_result <- ENMeval::ENMevaluate(
+  occs = presences,
+  bg = background,
+  algorithm = "maxnet",
+  partitions = "user",
+  user.grp = list(
+    occs.grp = block_folds$occs.grp,
+    bg.grp = block_folds$bg.grp
+  ),
+  tune.args = list(
+    fc = c("L", "Q", "LQ"),
+    rm = c(0.5, 1, 2)
+  ),
+  other.settings = list(
+    validation.bg = "partition",
+    addsamplestobackground = TRUE
+  ),
+  user.eval = tss_user_eval
+)
 #>   |                                                                              |                                                                      |   0%  |                                                                              |========                                                              |  11%  |                                                                              |================                                                      |  22%  |                                                                              |=======================                                               |  33%  |                                                                              |===============================                                       |  44%  |                                                                              |=======================================                               |  56%  |                                                                              |===============================================                       |  67%  |                                                                              |======================================================                |  78%  |                                                                              |==============================================================        |  89%  |                                                                              |======================================================================| 100%
-#> ENMevaluate completed in 0 minutes 10.1 seconds.
 ```
 
-The argument `user.eval = tss_user_eval` adds TSS as a custom evaluation
-metric. For every cross-validation fold, `ENMeval` supplies predictions
-for training occurrences, validation occurrences, training background
-records and validation background records to
-[`tss_user_eval()`](https://aavotins.github.io/sdmhelpers/reference/tss_user_eval.md),
-which then applies
+The `user.eval = tss_user_eval` argument adds the package’s custom TSS
+calculations. For each candidate model and cross-validation fold,
+`ENMeval` supplies predictions for training and validation occurrences
+and background records.
+[`tss_user_eval()`](https://aavotins.github.io/sdmhelpers/reference/tss_user_eval.md)
+applies
 [`max_tss()`](https://aavotins.github.io/sdmhelpers/reference/max_tss.md)
-to these validation predictions and returns the maximum TSS and its
-associated classification threshold.
+separately to the training and validation predictions. Its fold-level
+output includes maximum validation TSS (`tss.val`), the corresponding
+validation threshold (`thr.val`), sensitivity (`sens.val`),
+background-based specificity (`spec.val`), and maximum training TSS
+(`tss.train`).
 
-When
+In presence-background models, background locations are not confirmed
+absences. Consequently, `spec.val` is the proportion of background
+predictions below the selected threshold, not specificity estimated
+using verified absences.
+
+**Interpretation of threshold optimisation.** Since `thr.val` is
+selected to maximise TSS on the same validation observations used to
+calculate `tss.val`, validation TSS is optimised for that fold. The
+spatial validation records were withheld from *model fitting*, but not
+from *threshold selection*. Accordingly, these TSS values can help
+compare candidate settings, but should not be presented as fully
+independent estimates of the performance of a preselected classification
+threshold. For a final independent threshold-based assessment, select
+the threshold without reference to the independent test outcomes and
+apply it unchanged to that test set, as described in the preceding
+evaluation section.
+
+The model-level results aggregate values across folds. A compact table
+is more useful in an introductory vignette than printing every available
+statistic:
 
 ``` r
 
+cv_results <- ENMeval::eval.results(enmeval_result)
 
-other.settings = list(validation.bg = "partition")
+knitr::kable(
+  cv_results[, c(
+    "fc", "rm", "auc.val.avg",
+    "tss.val.avg", "tss.val.sd",
+    "AICc", "delta.AICc"
+  )],
+  digits = 3
+)
 ```
 
-is used, validation occurrences are compared only with background
-records from the corresponding validation partition. This means that
-both presences and background records are spatially withheld during
-evaluation. If `validation.bg = "full"` is used instead, validation
-occurrences are compared with the combined training and validation
-background predictions.
+| fc  |  rm | auc.val.avg | tss.val.avg | tss.val.sd |    AICc | delta.AICc |
+|:----|----:|------------:|------------:|-----------:|--------:|-----------:|
+| L   | 0.5 |       0.825 |       0.579 |      0.098 | 938.411 |     12.058 |
+| Q   | 0.5 |       0.822 |       0.603 |      0.115 | 962.050 |     35.697 |
+| LQ  | 0.5 |       0.853 |       0.614 |      0.107 | 930.219 |      3.866 |
+| L   | 1.0 |       0.829 |       0.581 |      0.092 | 938.451 |     12.097 |
+| Q   | 1.0 |       0.838 |       0.614 |      0.127 | 962.161 |     35.808 |
+| LQ  | 1.0 |       0.851 |       0.603 |      0.102 | 931.310 |      4.956 |
+| L   | 2.0 |       0.835 |       0.589 |      0.085 | 938.598 |     12.245 |
+| Q   | 2.0 |       0.837 |       0.612 |      0.132 | 962.567 |     36.214 |
+| LQ  | 2.0 |       0.846 |       0.595 |      0.100 | 926.353 |      0.000 |
 
-For presence-background models, background locations are not confirmed
-absences. Consequently, the reported specificity is the proportion of
-background predictions falling below the selected threshold rather than
-specificity calculated from known true absences. The resulting TSS
-should therefore be interpreted as a measure of discrimination between
-presences and background rather than conventional classification
+Here, the Continuous Boyce Index (`CBI`) is available only when the
+optional `ecospat` dependency is installed. Moreover, because the
+example passes extracted environmental values rather than a full
+environmental raster to
+[`ENMevaluate()`](https://jamiemkass.github.io/ENMeval/reference/ENMevaluate.html),
+its AICc calculation uses the supplied background predictions as an
+approximation to the environmental domain. Both points matter when
+interpreting or comparing these statistics.
+
+Fold-specific statistics can also be inspected; the `fold` column
+identifies the validation partition:
+
+``` r
+
+cv_folds <- ENMeval::eval.results.partitions(enmeval_result)
+
+knitr::kable(
+  head(cv_folds[, c(
+    "tune.args", "fold", "auc.val",
+    "tss.val", "thr.val", "tss.train"
+  )], 12),
+  digits = 3
+)
+```
+
+| tune.args    | fold | auc.val | tss.val | thr.val | tss.train |
+|:-------------|-----:|--------:|--------:|--------:|----------:|
+| fc.L_rm.0.5  |    1 |   0.809 |   0.573 |   0.412 |     0.658 |
+| fc.L_rm.0.5  |    2 |   0.754 |   0.497 |   0.082 |     0.652 |
+| fc.L_rm.0.5  |    3 |   0.816 |   0.527 |   0.711 |     0.643 |
+| fc.L_rm.0.5  |    4 |   0.920 |   0.718 |   0.371 |     0.592 |
+| fc.Q_rm.0.5  |    1 |   0.743 |   0.521 |   0.286 |     0.666 |
+| fc.Q_rm.0.5  |    2 |   0.828 |   0.673 |   0.164 |     0.666 |
+| fc.Q_rm.0.5  |    3 |   0.801 |   0.490 |   0.664 |     0.712 |
+| fc.Q_rm.0.5  |    4 |   0.916 |   0.728 |   0.481 |     0.646 |
+| fc.LQ_rm.0.5 |    1 |   0.796 |   0.563 |   0.436 |     0.766 |
+| fc.LQ_rm.0.5 |    2 |   0.845 |   0.597 |   0.039 |     0.652 |
+| fc.LQ_rm.0.5 |    3 |   0.839 |   0.527 |   0.668 |     0.741 |
+| fc.LQ_rm.0.5 |    4 |   0.932 |   0.769 |   0.207 |     0.695 |
+
+Cross-validation helps choose model settings using the training dataset.
+The final model can then be fitted using the selected predictors and
+model settings and evaluated once with the withheld independent test
+set. In a fully nested evaluation of the *complete* modelling procedure,
+predictor screening and other data-dependent preprocessing would also be
+repeated within each cross-validation training fold rather than
+performed once on all training records.
+
+## Final model selection and independent testing
+
+After evaluating alternative model settings using spatial
+cross-validation, the preferred model can be selected from the
+`ENMevaluation` object. ENMeval stores models fitted using the complete
+training dataset for each combination of feature classes and
+regularisation multipliers. Consequently, there is no need to fit the
+selected model again manually.
+
+The independent testing dataset remains withheld from predictor
+screening decisions, model tuning, and fitting.
+
+### Selecting the preferred model
+
+For this introductory example, we select the model with the lowest
+corrected Akaike Information Criterion (AICc). Other selection
+strategies may also consider cross-validation performance or a
+combination of criteria.
+
+``` r
+
+cv_results <- ENMeval::eval.results(enmeval_result)
+
+valid_models <- which(is.finite(cv_results$AICc))
+
+if (!length(valid_models)) {
+  stop("No candidate model has a finite AICc.")
+}
+
+best_idx <- valid_models[
+  which.min(cv_results$AICc[valid_models])
+]
+
+best_settings <- cv_results[best_idx, , drop = FALSE]
+
+best_settings[, c(
+  "fc", "rm", "tune.args",
+  "AICc", "delta.AICc",
+  "auc.val.avg", "tss.val.avg"
+)]
+#>   fc rm  tune.args     AICc delta.AICc auc.val.avg tss.val.avg
+#> 9 LQ  2 fc.LQ_rm.2 926.3533          0   0.8459701   0.5950956
+```
+
+### Extracting the selected model
+
+The `tune.args` column identifies each candidate model within the list
+returned by
+[`ENMeval::eval.models()`](https://jamiemkass.github.io/ENMeval/reference/eval.models.html).
+We use this identifier to extract the model fitted with the complete
+training dataset.
+
+``` r
+
+best_model_id <- as.character(
+  best_settings$tune.args[1]
+)
+
+fitted_models <- ENMeval::eval.models(enmeval_result)
+
+final_model <- fitted_models[[best_model_id]]
+
+if (is.null(final_model)) {
+  stop("Selected model was not found in enmeval_result.")
+}
+
+stopifnot(inherits(final_model, "maxnet"))
+```
+
+The resulting `final_model` retains the feature classes, regularisation
+multiplier, and background convention used during ENMeval fitting. No
+independent testing observations have contributed to this model.
+
+### Selecting a classification threshold
+
+To evaluate threshold-based predictive performance, we first determine
+the classification threshold using training predictions only.
+
+Here,
+[`max_tss()`](https://aavotins.github.io/sdmhelpers/reference/max_tss.md)
+identifies the threshold maximising TSS between training presences and
+background records. This threshold will subsequently be applied
+unchanged to the independent testing data.
+
+``` r
+
+selected_vars <- variance_screen$keep
+
+train_x <- training_set@data[
+  , selected_vars, drop = FALSE
+]
+
+train_y <- training_set@pa
+
+train_predictions <- predict(
+  final_model,
+  newdata = train_x,
+  type = "cloglog"
+)
+
+train_tss <- max_tss(
+  p_pos = train_predictions[train_y == 1],
+  p_neg = train_predictions[train_y == 0]
+)
+
+threshold <- unname(train_tss["threshold"])
+
+train_tss
+#>         tss   threshold sensitivity specificity 
+#>   0.6778788   0.1423901   0.9733333   0.7045455
+```
+
+Although this threshold is optimised on the training data, it is
+selected without consulting the independent testing observations.
+Consequently, its application to the independent dataset provides an
+assessment of performance at a previously determined threshold.
+
+### Independent testing
+
+The selected model is now applied to the independently withheld presence
+and background records. Only predictors used during model fitting are
+included in the prediction dataset.
+
+``` r
+
+test_x <- testing_set@data[
+  , selected_vars, drop = FALSE
+]
+
+test_y <- testing_set@pa
+
+# Apply ENMeval's clamping convention if enabled
+if (isTRUE(enmeval_result@doClamp)) {
+  test_x <- ENMeval::clamp.vars(
+    orig.vals = test_x,
+    ref.vals = train_x,
+    left = enmeval_result@clamp.directions$left,
+    right = enmeval_result@clamp.directions$right
+  )
+}
+
+test_predictions <- predict(
+  final_model,
+  newdata = test_x,
+  type = "cloglog"
+)
+
+test_pos <- test_predictions[test_y == 1]
+test_bg <- test_predictions[test_y == 0]
+
+test_sensitivity <- mean(test_pos >= threshold)
+test_specificity <- mean(test_bg < threshold)
+
+independent_tss <-
+  test_sensitivity + test_specificity - 1
+
+independent_results <- data.frame(
+  model = best_model_id,
+  n_presences = length(test_pos),
+  n_background = length(test_bg),
+  threshold = threshold,
+  sensitivity = test_sensitivity,
+  background_specificity = test_specificity,
+  TSS = independent_tss
+)
+
+knitr::kable(
+  independent_results,
+  digits = 3,
+  caption = "Independent testing results for the selected Maxnet model."
+)
+```
+
+| model | n_presences | n_background | threshold | sensitivity | background_specificity | TSS |
+|:---|---:|---:|---:|---:|---:|---:|
+| fc.LQ_rm.2 | 81 | 1067 | 0.142 | 0.963 | 0.55 | 0.513 |
+
+Independent testing results for the selected Maxnet model. {.table}
+
+Sensitivity represents the proportion of independently withheld
+presences classified as suitable, whereas background-based specificity
+represents the proportion of withheld background records classified as
+unsuitable.
+
+Because background locations are not confirmed absences, TSS should be
+interpreted as a measure of discrimination between presences and
+background rather than conventional presence-absence classification
 accuracy.
 
-[`tss_user_eval()`](https://aavotins.github.io/sdmhelpers/reference/tss_user_eval.md)
-selects the threshold maximizing TSS separately for the training and
-validation predictions. Consequently, both `tss.train` and `tss.val` are
-optimized on the same data on which they are evaluated. In particular,
-`tss.val` should therefore be regarded as a cross-validation metric for
-comparing candidate models rather than as a fully independent estimate
-of threshold-based predictive performance.
+The classification threshold was selected using the training dataset and
+was not re-optimised on the independent testing data. Furthermore,
+neither the model settings nor the predictor set were modified after
+examining the independent testing results.
 
-The model-level results returned by `ENMeval` summarize the fold-level
-statistics and can be inspected with:
-
-``` r
-
-ENMeval::eval.results(pirmais)
-#>   fc  rm    tune.args auc.train cbi.train auc.diff.avg auc.diff.sd auc.val.avg
-#> 1  L 0.5  fc.L_rm.0.5 0.8714644        NA   0.07945571 0.022225179   0.8265177
-#> 2  Q 0.5  fc.Q_rm.0.5 0.8733380        NA   0.07111201 0.049360782   0.8213454
-#> 3 LQ 0.5 fc.LQ_rm.0.5 0.8911901        NA   0.06291696 0.033143431   0.8538288
-#> 4  L 1.0    fc.L_rm.1 0.8714923        NA   0.07545736 0.013420158   0.8314957
-#> 5  Q 1.0    fc.Q_rm.1 0.8733705        NA   0.07406087 0.043186846   0.8354066
-#> 6 LQ 1.0   fc.LQ_rm.1 0.8910181        NA   0.06465631 0.027427750   0.8523159
-#> 7  L 2.0    fc.L_rm.2 0.8714086        NA   0.06784453 0.002873099   0.8394832
-#> 8  Q 2.0    fc.Q_rm.2 0.8728591        NA   0.07260982 0.043543630   0.8340900
-#> 9 LQ 2.0   fc.LQ_rm.2 0.8893073        NA   0.06888881 0.019434704   0.8475060
-#>   auc.val.sd cbi.val.avg cbi.val.sd or.10p.avg  or.10p.sd or.mtp.avg  or.mtp.sd
-#> 1 0.06515442          NA         NA  0.1725146 0.20266343 0.02631579 0.03038686
-#> 2 0.06393752          NA         NA  0.1600877 0.08605885 0.02631579 0.03038686
-#> 3 0.05354472          NA         NA  0.1849415 0.22886072 0.02631579 0.03038686
-#> 4 0.06116684          NA         NA  0.1593567 0.17662852 0.02631579 0.03038686
-#> 5 0.07081886          NA         NA  0.1337719 0.05425139 0.01315789 0.02631579
-#> 6 0.05359382          NA         NA  0.1586257 0.21004351 0.02631579 0.03038686
-#> 7 0.05489059          NA         NA  0.1461988 0.15069121 0.01315789 0.02631579
-#> 8 0.06719898          NA         NA  0.1337719 0.05425139 0.01315789 0.02631579
-#> 9 0.05747581          NA         NA  0.1593567 0.17662852 0.01315789 0.02631579
-#>   sens.val.avg sens.val.sd spec.val.avg spec.val.sd thr.val.avg thr.val.sd
-#> 1    0.7733918  0.10818713    0.8029094  0.12455619   0.4409865  0.2682956
-#> 2    0.8004386  0.11579280    0.8009088  0.09314715   0.3590680  0.2133038
-#> 3    0.8684211  0.15789474    0.7350150  0.09750529   0.3324927  0.2717441
-#> 4    0.7602339  0.10877822    0.8212688  0.10944054   0.4560333  0.2567586
-#> 5    0.8128655  0.15272006    0.8048555  0.11914765   0.3993499  0.2140476
-#> 6    0.8552632  0.14493607    0.7459984  0.08987392   0.3498289  0.2762962
-#> 7    0.7602339  0.10877822    0.8268857  0.10782651   0.4674289  0.2529230
-#> 8    0.8654971  0.09465739    0.7537042  0.13609890   0.3247499  0.1256810
-#> 9    0.8135965  0.10894511    0.7878394  0.12253615   0.4021141  0.2485099
-#>   tss.train.avg tss.train.sd tss.val.avg tss.val.sd     AICc delta.AICc
-#> 1     0.6023010   0.03060439   0.5763013 0.09630676 941.0513  12.115677
-#> 2     0.6331861   0.03023382   0.6013474 0.11202094 963.8214  34.885785
-#> 3     0.6740021   0.05803389   0.6034361 0.10076023 933.0259   4.090330
-#> 4     0.6010455   0.03197616   0.5815027 0.09067639 941.0898  12.154199
-#> 5     0.6315777   0.02755788   0.6177210 0.12669991 963.9343  34.998677
-#> 6     0.6696376   0.05634489   0.6012615 0.09244315 934.1113   5.175668
-#> 7     0.5999035   0.02966228   0.5871197 0.08706305 941.2359  12.300267
-#> 8     0.6262000   0.03072282   0.6192012 0.13265557 964.3478  35.412167
-#> 9     0.6498189   0.05407192   0.6014359 0.09896934 928.9356   0.000000
-#>          w.AIC ncoef
-#> 1 1.931342e-03     5
-#> 2 2.194791e-08     5
-#> 3 1.067926e-01    10
-#> 4 1.894499e-03     5
-#> 5 2.074335e-08     5
-#> 6 6.206731e-02    10
-#> 7 1.761068e-03     5
-#> 8 1.686905e-08     5
-#> 9 8.255531e-01     7
-```
-
-Fold-specific results can be examined with:
-
-``` r
-
-
-ENMeval::eval.results.partitions(pirmais)
-#>       tune.args fold   auc.val   auc.diff cbi.val     or.mtp     or.10p
-#> 1   fc.L_rm.0.5    1 0.8137455 0.06758341      NA 0.05263158 0.05263158
-#> 2   fc.L_rm.0.5    2 0.7601151 0.11275353      NA 0.05263158 0.47368421
-#> 3   fc.L_rm.0.5    3 0.8159626 0.06759129      NA 0.00000000 0.05263158
-#> 4   fc.L_rm.0.5    4 0.9162476 0.06989459      NA 0.00000000 0.11111111
-#> 5   fc.Q_rm.0.5    1 0.7478283 0.13250706      NA 0.05263158 0.05263158
-#> 6   fc.Q_rm.0.5    2 0.8356908 0.01907880      NA 0.05263158 0.26315789
-#> 7   fc.Q_rm.0.5    3 0.8014197 0.08629100      NA 0.00000000 0.15789474
-#> 8   fc.Q_rm.0.5    4 0.9004430 0.04657120      NA 0.00000000 0.16666667
-#> 9  fc.LQ_rm.0.5    1 0.7976495 0.11064213      NA 0.05263158 0.10526316
-#> 10 fc.LQ_rm.0.5    2 0.8462993 0.03540573      NA 0.05263158 0.52631579
-#> 11 fc.LQ_rm.0.5    3 0.8447022 0.05812976      NA 0.00000000 0.05263158
-#> 12 fc.LQ_rm.0.5    4 0.9266643 0.04749023      NA 0.00000000 0.05555556
-#> 13    fc.L_rm.1    1 0.8127236 0.06845567      NA 0.05263158 0.05263158
-#> 14    fc.L_rm.1    2 0.7780428 0.09555171      NA 0.05263158 0.42105263
-#> 15    fc.L_rm.1    3 0.8156163 0.06796583      NA 0.00000000 0.05263158
-#> 16    fc.L_rm.1    4 0.9196001 0.06985625      NA 0.00000000 0.11111111
-#> 17    fc.Q_rm.1    1 0.7514052 0.12973318      NA 0.05263158 0.05263158
-#> 18    fc.Q_rm.1    2 0.8881579 0.03416020      NA 0.00000000 0.15789474
-#> 19    fc.Q_rm.1    3 0.8024584 0.08591674      NA 0.00000000 0.15789474
-#> 20    fc.Q_rm.1    4 0.8996049 0.04643335      NA 0.00000000 0.16666667
-#> 21   fc.LQ_rm.1    1 0.8019928 0.10503296      NA 0.05263158 0.05263158
-#> 22   fc.LQ_rm.1    2 0.8352796 0.04556141      NA 0.05263158 0.47368421
-#> 23   fc.LQ_rm.1    3 0.8440097 0.05822846      NA 0.00000000 0.05263158
-#> 24   fc.LQ_rm.1    4 0.9279813 0.04980242      NA 0.00000000 0.05555556
-#> 25    fc.L_rm.2    1 0.8111906 0.06934893      NA 0.05263158 0.05263158
-#> 26    fc.L_rm.2    2 0.8059211 0.06752365      NA 0.00000000 0.36842105
-#> 27    fc.L_rm.2    3 0.8194252 0.06395902      NA 0.00000000 0.05263158
-#> 28    fc.L_rm.2    4 0.9213961 0.07054652      NA 0.00000000 0.11111111
-#> 29    fc.Q_rm.2    1 0.7554931 0.12778216      NA 0.05263158 0.05263158
-#> 30    fc.Q_rm.2    2 0.8822368 0.03033592      NA 0.00000000 0.15789474
-#> 31    fc.Q_rm.2    3 0.8014197 0.08583149      NA 0.00000000 0.15789474
-#> 32    fc.Q_rm.2    4 0.8972102 0.04648970      NA 0.00000000 0.16666667
-#> 33   fc.LQ_rm.2    1 0.8050588 0.09781580      NA 0.05263158 0.05263158
-#> 34   fc.LQ_rm.2    2 0.8162007 0.05982469      NA 0.00000000 0.42105263
-#> 35   fc.LQ_rm.2    3 0.8374307 0.06186656      NA 0.00000000 0.05263158
-#> 36   fc.LQ_rm.2    4 0.9313338 0.05604817      NA 0.00000000 0.11111111
-#>      tss.val    thr.val  sens.val  spec.val tss.train
-#> 1  0.5840572 0.41914114 0.8947368 0.6893204 0.6287021
-#> 2  0.4925987 0.08071654 0.7894737 0.7031250 0.6052765
-#> 3  0.5197368 0.71163642 0.6315789 0.8881579 0.6165309
-#> 4  0.7088123 0.55245194 0.7777778 0.9310345 0.5586945
-#> 5  0.5314257 0.29024885 0.8421053 0.6893204 0.6287021
-#> 6  0.6572368 0.16345037 0.8947368 0.7625000 0.6134793
-#> 7  0.4868421 0.66235635 0.6315789 0.8552632 0.6772283
-#> 8  0.7298851 0.32021649 0.8333333 0.8965517 0.6133348
-#> 9  0.5467552 0.42438041 0.7894737 0.7572816 0.7344294
-#> 10 0.6015625 0.04355653 1.0000000 0.6015625 0.6044470
-#> 11 0.5197368 0.66574347 0.6842105 0.8355263 0.7066084
-#> 12 0.7456897 0.19629035 1.0000000 0.7456897 0.6505234
-#> 13 0.5840572 0.42673961 0.8947368 0.6893204 0.6271777
-#> 14 0.5134046 0.11472587 0.7368421 0.7765625 0.6091475
-#> 15 0.5197368 0.71799392 0.6315789 0.8881579 0.6133639
-#> 16 0.7088123 0.56467369 0.7777778 0.9310345 0.5544928
-#> 17 0.5314257 0.30181062 0.8421053 0.6893204 0.6325131
-#> 18 0.7265625 0.16274972 1.0000000 0.7265625 0.6145622
-#> 19 0.4868421 0.65622779 0.6315789 0.8552632 0.6701024
-#> 20 0.7260536 0.47661128 0.7777778 0.9482759 0.6091331
-#> 21 0.5564640 0.47405611 0.7894737 0.7669903 0.7290941
-#> 22 0.5786184 0.05872007 0.9473684 0.6312500 0.6057373
-#> 23 0.5328947 0.67297505 0.6842105 0.8486842 0.7026496
-#> 24 0.7370690 0.19356447 1.0000000 0.7370690 0.6410696
-#> 25 0.5840572 0.44114963 0.8947368 0.6893204 0.6271777
-#> 26 0.5337171 0.12927956 0.7368421 0.7968750 0.6052765
-#> 27 0.5197368 0.72199795 0.6315789 0.8881579 0.6094050
-#> 28 0.7109674 0.57728862 0.7777778 0.9331897 0.5577547
-#> 29 0.5314257 0.32573151 0.8421053 0.6893204 0.6366507
-#> 30 0.7390625 0.17582657 1.0000000 0.7390625 0.6171429
-#> 31 0.4802632 0.31426790 0.8421053 0.6381579 0.6618312
-#> 32 0.7260536 0.48317380 0.7777778 0.9482759 0.5891751
-#> 33 0.5784364 0.31729632 0.9473684 0.6310680 0.7074260
-#> 34 0.5472862 0.11042584 0.7894737 0.7578125 0.6029032
-#> 35 0.5328947 0.69552666 0.6842105 0.8486842 0.6844390
-#> 36 0.7471264 0.48520773 0.8333333 0.9137931 0.6045076
-```
-
-Cross-validation TSS and independent-test TSS serve different purposes
-in this workflow. Cross-validation is used to compare candidate feature
-classes, regularization multipliers or other model settings using only
-the training data. Once the preferred settings have been selected and
-the final model has been fitted, the completely withheld independent
-testing set can be used for a separate assessment of predictive
-performance.
-
-For a strictly independent threshold-based assessment, the
-classification threshold should be selected from training or
-cross-validation data and then applied unchanged to the independent
-testing data, rather than re-optimizing the threshold on the independent
-test set.
+This provides an independent assessment of the completed modelling
+procedure at a preselected classification threshold.
 
 ## References
 
@@ -1234,9 +1622,9 @@ Ecologists.” *Diversity and Distributions* 17 (1): 43–57.
 Kass, Jamie M., Robert Muscarella, Peter J. Galante, et al. 2021.
 “ENMeval 2.0: Redesigned for Customizable and Reproducible Modeling of
 Species’ Niches and Distributions.” *Methods in Ecology and Evolution*
-12: 1602–8. <https://doi.org/10.1111/2041-210X.13628>.
+9: 1602–8. <https://doi.org/10.1111/2041-210X.13628>.
 
-Mardia, Kanti V., and Peter E. Jupp. 2000. *Directional Statistics*.
+Mardia, Kanti V., and Peter E. Jupp. 1999. *Directional Statistics*.
 Wiley.
 
 Muscarella, Robert, Peter J. Galante, Mariano Soley-Guardia, et al.

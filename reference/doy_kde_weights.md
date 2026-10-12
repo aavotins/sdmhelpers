@@ -42,7 +42,7 @@ doy_kde_weights(
   n_days = NULL,
   bw = "nrd0",
   n = NULL,
-  eps = 1e-06
+  eps = 0.000001
 )
 ```
 

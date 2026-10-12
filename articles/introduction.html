@@ -27,7 +27,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">sdmhelpers</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.0.0.9000</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -82,7 +82,7 @@ package contains tools for constructing sampling-bias surfaces from
 target-group records, weighting target-group observations by seasonal or
 combined seasonal and diel overlap, selecting complete spatial folds for
 independent testing, screening environmental predictors, and evaluating
-predictions using the true skill statistic (TSS).</p>
+predictions using the True Skill Statistic (TSS).</p>
 <p>Presence-only SDMs are sensitive to differences between the sampling
 process that generated species observations and the process used to
 select background locations. A commonly used approach is therefore to
@@ -143,7 +143,7 @@ habitat-inventory dates, and an example environmental raster.</p>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span><span class="st">"habitat_inventories"</span>, package <span class="op">=</span> <span class="st">"sdmhelpers"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span><span class="st">"points100"</span>, package <span class="op">=</span> <span class="st">"sdmhelpers"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span><span class="st">"example_grid"</span>, package <span class="op">=</span> <span class="st">"sdmhelpers"</span><span class="op">)</span></span>
-<span><span class="va">example_grid</span><span class="op">=</span><span class="fu">terra</span><span class="fu">::</span><span class="fu"><a href="https://rspatial.github.io/terra/reference/wrap.html" class="external-link">unwrap</a></span><span class="op">(</span><span class="va">example_grid</span><span class="op">)</span></span>
+<span><span class="va">example_grid</span> <span class="op">&lt;-</span> <span class="fu">terra</span><span class="fu">::</span><span class="fu"><a href="https://rspatial.github.io/terra/reference/wrap.html" class="external-link">unwrap</a></span><span class="op">(</span><span class="va">example_grid</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span><span class="st">"example_presences"</span>, package <span class="op">=</span> <span class="st">"sdmhelpers"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span><span class="st">"example_background"</span>, package <span class="op">=</span> <span class="st">"sdmhelpers"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span><span class="st">"example_independent_blocks"</span>, package <span class="op">=</span> <span class="st">"sdmhelpers"</span><span class="op">)</span></span>
@@ -230,10 +230,11 @@ estimation in general is described by <span class="citation">Silverman
 (<a href="#ref-silverman1986">1986</a>)</span>.</p>
 <p>The example grid uses EPSG:3059, whose map units are metres, so
 <code>sigma = 3000</code> corresponds to a Gaussian bandwidth of 3 km.
-With <code>normalize = "pdf"</code>, the resulting surface is normalized
-to integrate to one and represents the spatial probability density of
-target-group sampling effort. It can therefore be used as a relative
-sampling-bias surface for background sampling.</p>
+With <code>normalize = "pdf"</code>, the resulting surface is normalised
+to integrate to one and represents a probability-density-scaled surface
+of the spatial distribution of target-group records. It can therefore be
+used as a relative proxy sampling-bias surface for background
+sampling.</p>
 <div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">simple_bias</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/kde_surface.html">kde_surface</a></span><span class="op">(</span></span>
 <span>  x <span class="op">=</span> <span class="va">tg_points</span>,</span>
@@ -244,6 +245,7 @@ sampling-bias surface for background sampling.</p>
 <span>  mask <span class="op">=</span> <span class="cn">TRUE</span></span>
 <span><span class="op">)</span></span>
 <span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/options.html" class="external-link">options</a></span><span class="op">(</span>scipen <span class="op">=</span> <span class="fl">999</span><span class="op">)</span></span>
 <span><span class="fu">terra</span><span class="fu">::</span><span class="fu"><a href="https://rspatial.github.io/terra/reference/plot.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">simple_bias</span>, main <span class="op">=</span> <span class="st">"Simple target-group bias"</span><span class="op">)</span></span></code></pre></div>
 <div class="figure">
 <img src="introduction_files/figure-html/simple-kde-1.png" class="r-plt" alt="Unweighted target-group sampling-bias surface." width="672"><p class="caption">
@@ -258,14 +260,19 @@ species. The following sections relax that assumption.</p>
 <h2 id="phenologically-weighted-target-group">Phenologically weighted target-group<a class="anchor" aria-label="anchor" href="#phenologically-weighted-target-group"></a>
 </h2>
 <p>Species observed by the same people or recording scheme may
-nevertheless have different seasonal detectability and/or availability.
-A species recorded mainly in winter, for example, may provide little
-information about sampling effort relevant to a species recorded mainly
-during late spring.</p>
-<p><code><a href="../reference/phenology_overlap_weights.html">phenology_overlap_weights()</a></code> estimates the overlap
-between the day-of-year distribution of a focal species and each
-comparison species using kernel-density overlap. The overlap coefficient
-describes the common area of two estimated distributions <span class="citation">(<a href="#ref-pastore2018">Pastore 2018</a>; <a href="#ref-pastore2019">Pastore and Calcagnì 2019</a>)</span>.</p>
+nevertheless have different seasonal detectability, availability, or
+both. A species recorded mainly in winter, for example, may provide
+little information about sampling effort relevant to a species recorded
+mainly during late spring.</p>
+<p>phenology_overlap_weights() estimates overlap between species’
+day-of-year distributions using overlapping::overlap() <span class="citation">(<a href="#ref-pastore2019">Pastore and Calcagnì
+2019</a>)</span>. This approach provides compatibility with conventional
+kernel-density overlap estimation <span class="citation">(<a href="#ref-pastore2018">Pastore 2018</a>)</span>. However, because day
+of year is treated as a linear variable, observations near the end and
+beginning of the calendar year are not considered adjacent. For species
+with observation periods spanning this boundary, torus_overlap_many()
+provides an alternative based on circular kernel-density estimation with
+constant (e.g. midday) value for the time of day.</p>
 <p>First, day of year is added to the bird records.</p>
 <div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">bird_dates</span> <span class="op">&lt;-</span> <span class="va">aves_small</span></span>
@@ -277,8 +284,9 @@ describes the common area of two estimated distributions <span class="citation">
 <span></span>
 <span><span class="va">target_code</span></span>
 <span><span class="co">#&gt; [1] "STRALU"</span></span></code></pre></div>
-<p>We then estimate phenological overlap between the focal species and
-every species in the target group.</p>
+<p>We then estimate phenological overlap between the focal species
+(synonymous to target-species) and every species in the
+target-group.</p>
 <div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">phenology_weights</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/phenology_overlap_weights.html">phenology_overlap_weights</a></span><span class="op">(</span></span>
 <span>  target <span class="op">=</span> <span class="va">bird_dates</span>,</span>
@@ -339,6 +347,7 @@ within 100-m cells before KDE smoothing.</p>
 <span>  mask <span class="op">=</span> <span class="cn">TRUE</span></span>
 <span><span class="op">)</span></span>
 <span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/options.html" class="external-link">options</a></span><span class="op">(</span>scipen <span class="op">=</span> <span class="fl">999</span><span class="op">)</span></span>
 <span><span class="fu">terra</span><span class="fu">::</span><span class="fu"><a href="https://rspatial.github.io/terra/reference/plot.html" class="external-link">plot</a></span><span class="op">(</span></span>
 <span>  <span class="va">phenology_bias</span>,</span>
 <span>  main <span class="op">=</span> <span class="st">"Phenologically weighted target-group bias"</span></span>
@@ -355,7 +364,7 @@ the focal species’ seasonal sampling process were more or less likely to
 have been collected.</p>
 </div>
 <div class="section level2">
-<h2 id="seasonally-and-dielly-weighted-target-group">Seasonally and dielly weighted target-group<a class="anchor" aria-label="anchor" href="#seasonally-and-dielly-weighted-target-group"></a>
+<h2 id="target-group-weighting-by-seasonal-and-diel-overlap">Target-group weighting by seasonal and diel overlap<a class="anchor" aria-label="anchor" href="#target-group-weighting-by-seasonal-and-diel-overlap"></a>
 </h2>
 <p>For taxa whose detectability varies both seasonally and through the
 day, seasonal overlap alone may be insufficient.
@@ -363,21 +372,30 @@ day, seasonal overlap alone may be insufficient.
 two circular dimensions and estimates overlap on a two-dimensional
 torus. Circular treatment is important because both annual and daily
 cycles wrap around their endpoints; see <span class="citation">Mardia
-and Jupp (<a href="#ref-mardia2000">2000</a>)</span> for directional
+and Jupp (<a href="#ref-mardia2000">1999</a>)</span> for directional
 statistics and <span class="citation">Ridout and Linkie (<a href="#ref-ridout2009">2009</a>)</span> for overlap estimation of diel
 activity patterns.</p>
-<p>The bird dataset contains date-time observations. Because this is an
-introductory vignette, the example uses the focal species with the
-largest number of valid date-times and compares it with every
-target-groups’ species.</p>
+<p>The bird dataset contains date-time observations. For this
+introductory example, we select the focal species with the largest
+number of valid date-time records and compare its seasonal and diel
+observation distributions with those of every species in the target
+group (including the focal species itself).</p>
 <div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span></span>
-<span><span class="va">target_species_torus</span> <span class="op">&lt;-</span> <span class="va">target_species</span></span>
+<code class="sourceCode R"><span><span class="va">comparison_data</span> <span class="op">&lt;-</span> <span class="va">aves_small</span><span class="op">[</span></span>
+<span>  <span class="op">!</span><span class="fu"><a href="https://rdrr.io/r/base/NA.html" class="external-link">is.na</a></span><span class="op">(</span><span class="va">aves_small</span><span class="op">$</span><span class="va">date_time</span><span class="op">)</span>,</span>
+<span>  ,</span>
+<span>  drop <span class="op">=</span> <span class="cn">FALSE</span></span>
+<span><span class="op">]</span></span>
 <span></span>
-<span><span class="va">reference_data</span> <span class="op">&lt;-</span> <span class="va">aves_small</span><span class="op">[</span><span class="va">aves_small</span><span class="op">$</span><span class="va">species</span> <span class="op">==</span> <span class="va">target_species_torus</span> <span class="op">&amp;</span> </span>
-<span>                               <span class="op">!</span><span class="fu"><a href="https://rdrr.io/r/base/NA.html" class="external-link">is.na</a></span><span class="op">(</span><span class="va">aves_small</span><span class="op">$</span><span class="va">date_time</span><span class="op">)</span>,<span class="op">]</span></span>
+<span><span class="va">target_species_torus</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rspatial.github.io/terra/reference/names.html" class="external-link">names</a></span><span class="op">(</span></span>
+<span>  <span class="fu"><a href="https://rspatial.github.io/terra/reference/sort.html" class="external-link">sort</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/table.html" class="external-link">table</a></span><span class="op">(</span><span class="va">comparison_data</span><span class="op">$</span><span class="va">species</span><span class="op">)</span>, decreasing <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
+<span><span class="op">)</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span></span>
 <span></span>
-<span><span class="va">comparison_data</span> <span class="op">&lt;-</span> <span class="va">aves_small</span><span class="op">[</span><span class="op">!</span><span class="fu"><a href="https://rdrr.io/r/base/NA.html" class="external-link">is.na</a></span><span class="op">(</span><span class="va">aves_small</span><span class="op">$</span><span class="va">date_time</span><span class="op">)</span>,<span class="op">]</span></span>
+<span><span class="va">reference_data</span> <span class="op">&lt;-</span> <span class="va">comparison_data</span><span class="op">[</span></span>
+<span>  <span class="va">comparison_data</span><span class="op">$</span><span class="va">species</span> <span class="op">==</span> <span class="va">target_species_torus</span>,</span>
+<span>  ,</span>
+<span>  drop <span class="op">=</span> <span class="cn">FALSE</span></span>
+<span><span class="op">]</span></span>
 <span></span>
 <span><span class="va">reference_data</span><span class="op">$</span><span class="va">obs_date</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/as.Date.html" class="external-link">as.Date</a></span><span class="op">(</span><span class="va">reference_data</span><span class="op">$</span><span class="va">date_time</span><span class="op">)</span></span>
 <span><span class="va">reference_data</span><span class="op">$</span><span class="va">obs_time</span> <span class="op">&lt;-</span> <span class="fu">hms</span><span class="fu">::</span><span class="fu"><a href="https://hms.tidyverse.org/reference/hms.html" class="external-link">as_hms</a></span><span class="op">(</span><span class="va">reference_data</span><span class="op">$</span><span class="va">date_time</span><span class="op">)</span></span>
@@ -416,11 +434,11 @@ often be used in a final analysis.</p>
 <span><span class="co">#&gt; 3 Strix aluco Glaucidium passerinum        3004          330 0.41910228     OK</span></span>
 <span><span class="co">#&gt; 2 Strix aluco    Circus aeruginosus        3004          671 0.04184691     OK</span></span>
 <span><span class="co">#&gt; 1 Strix aluco           Buteo buteo        3004         2095 0.03477199     OK</span></span></code></pre></div>
-<p>The overlap coefficient ranges from zero to one for normalized
+<p>The overlap coefficient ranges from zero to one for normalised
 densities. A large value indicates that a comparison species has a
 seasonal-diel observation distribution similar to the focal species.</p>
 <p>To use these coefficients as relative species weights in a target
-group, they can be normalized across comparison species.</p>
+group, they can be normalised across comparison species.</p>
 <div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">ok</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/is.finite.html" class="external-link">is.finite</a></span><span class="op">(</span><span class="va">torus_overlap</span><span class="op">$</span><span class="va">overlap</span><span class="op">)</span></span>
 <span></span>
@@ -465,14 +483,19 @@ phenological weights above.</p>
 <span>  return_density <span class="op">=</span> <span class="cn">TRUE</span></span>
 <span><span class="op">)</span></span>
 <span></span>
-<span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggplot.html" class="external-link">ggplot</a></span><span class="op">(</span><span class="va">torus_result</span><span class="op">$</span><span class="va">density</span>,<span class="fu"><a href="https://ggplot2.tidyverse.org/reference/aes.html" class="external-link">aes</a></span><span class="op">(</span>x <span class="op">=</span> <span class="va">seasonal_position_days</span>,</span>
-<span>                          y <span class="op">=</span> <span class="va">decimal_hour</span>,</span>
-<span>                          fill <span class="op">=</span> <span class="va">comparison_density</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span></span>
+<span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggplot.html" class="external-link">ggplot</a></span><span class="op">(</span><span class="va">torus_result</span><span class="op">$</span><span class="va">density</span>,</span>
+<span>       <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/aes.html" class="external-link">aes</a></span><span class="op">(</span></span>
+<span>         x <span class="op">=</span> <span class="va">seasonal_position_days</span>,</span>
+<span>         y <span class="op">=</span> <span class="va">decimal_hour</span>,</span>
+<span>         fill <span class="op">=</span> <span class="va">comparison_density</span></span>
+<span>         <span class="op">)</span></span>
+<span>       <span class="op">)</span> <span class="op">+</span></span>
 <span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/geom_tile.html" class="external-link">geom_raster</a></span><span class="op">(</span><span class="op">)</span> <span class="op">+</span></span>
 <span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/facet_wrap.html" class="external-link">facet_wrap</a></span><span class="op">(</span><span class="op">~</span> <span class="va">comparison</span><span class="op">)</span> <span class="op">+</span></span>
 <span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/scale_continuous.html" class="external-link">scale_y_continuous</a></span><span class="op">(</span>breaks <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">24</span>, by <span class="op">=</span> <span class="fl">3</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span></span>
 <span>  <span class="fu">viridis</span><span class="fu">::</span><span class="fu"><a href="https://sjmgarnier.github.io/viridis/reference/scale_viridis.html" class="external-link">scale_fill_viridis</a></span><span class="op">(</span><span class="op">)</span> <span class="op">+</span></span>
-<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/labs.html" class="external-link">labs</a></span><span class="op">(</span>x <span class="op">=</span> <span class="st">"Seasonal position (days from 1 January)"</span>,</span>
+<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/labs.html" class="external-link">labs</a></span><span class="op">(</span></span>
+<span>    x <span class="op">=</span> <span class="st">"Seasonal position (days from 1 January)"</span>,</span>
 <span>       y <span class="op">=</span> <span class="st">"Time of day"</span>,</span>
 <span>       fill <span class="op">=</span> <span class="st">"Density"</span>,</span>
 <span>       title <span class="op">=</span> <span class="st">"Species-specific registration activity"</span><span class="op">)</span> <span class="op">+</span></span>
@@ -480,9 +503,13 @@ phenological weights above.</p>
 <p><img src="introduction_files/figure-html/torus-plot-1.png" class="r-plt" alt="" width="672"></p>
 <div class="sourceCode" id="cb16"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span></span>
-<span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggplot.html" class="external-link">ggplot</a></span><span class="op">(</span><span class="va">torus_result</span><span class="op">$</span><span class="va">density</span>,<span class="fu"><a href="https://ggplot2.tidyverse.org/reference/aes.html" class="external-link">aes</a></span><span class="op">(</span>x <span class="op">=</span> <span class="va">seasonal_position_days</span>,</span>
-<span>                          y <span class="op">=</span> <span class="va">decimal_hour</span>,</span>
-<span>                          fill <span class="op">=</span> <span class="va">shared_density</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span></span>
+<span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggplot.html" class="external-link">ggplot</a></span><span class="op">(</span><span class="va">torus_result</span><span class="op">$</span><span class="va">density</span>,</span>
+<span>       <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/aes.html" class="external-link">aes</a></span><span class="op">(</span></span>
+<span>         x <span class="op">=</span> <span class="va">seasonal_position_days</span>,</span>
+<span>         y <span class="op">=</span> <span class="va">decimal_hour</span>,</span>
+<span>         fill <span class="op">=</span> <span class="va">shared_density</span></span>
+<span>         <span class="op">)</span></span>
+<span>       <span class="op">)</span> <span class="op">+</span></span>
 <span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/geom_tile.html" class="external-link">geom_raster</a></span><span class="op">(</span><span class="op">)</span> <span class="op">+</span></span>
 <span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/facet_wrap.html" class="external-link">facet_wrap</a></span><span class="op">(</span><span class="op">~</span> <span class="va">comparison</span><span class="op">)</span> <span class="op">+</span></span>
 <span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/scale_continuous.html" class="external-link">scale_y_continuous</a></span><span class="op">(</span>breaks <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">24</span>, by <span class="op">=</span> <span class="fl">3</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span></span>
@@ -490,7 +517,11 @@ phenological weights above.</p>
 <span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/labs.html" class="external-link">labs</a></span><span class="op">(</span>x <span class="op">=</span> <span class="st">"Seasonal position (days from 1 January)"</span>,</span>
 <span>       y <span class="op">=</span> <span class="st">"Time of day"</span>,</span>
 <span>       fill <span class="op">=</span> <span class="st">"Density"</span>,</span>
-<span>       title <span class="op">=</span> <span class="st">"Registration activity overlap with STRALU"</span><span class="op">)</span> <span class="op">+</span></span>
+<span>       title <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span></span>
+<span>         <span class="st">"Registration activity overlap with "</span>, </span>
+<span>         <span class="va">target_species_torus</span></span>
+<span>         <span class="op">)</span></span>
+<span>       <span class="op">)</span> <span class="op">+</span></span>
 <span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggtheme.html" class="external-link">theme_bw</a></span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
 <p><img src="introduction_files/figure-html/torus-plot-2.png" class="r-plt" alt="" width="672"></p>
 </div>
@@ -502,15 +533,17 @@ the species itself was not necessarily recorded during that survey. In
 this case, <code><a href="../reference/doy_kde_weights.html">doy_kde_weights()</a></code> can estimate how closely each
 inventory date corresponds to the seasonal registration-activity
 distribution of a target species.</p>
-<p>The function estimates a wrapped day-of-year KDE from reference dates
-and evaluates that density at another set of dates. The wrapped
-construction reduces the artificial separation between observations near
-the end and beginning of a year. Bandwidth controls the degree of
-smoothing, as in conventional KDE <span class="citation">(<a href="#ref-silverman1986">Silverman 1986</a>)</span>.</p>
-<p>The example below uses one bryophyte species, which is considered
-old-growth forest specialist species, thus specifically searched during
-habitat inventories, as the reference seasonal distribution and weights
-the dates in <code>habitat_inventories</code>.</p>
+<p>The function estimates a circular approximation to a day-of-year KDE
+from the reference dates and evaluates that density at another set of
+dates. Circularity is approximated by periodically extending the
+reference observations across the seasonal boundary, which reduces
+boundary effects between observations near the end and beginning of the
+year. Bandwidth controls the degree of smoothing, as in conventional KDE
+<span class="citation">(<a href="#ref-silverman1986">Silverman
+1986</a>)</span>.</p>
+<p>The example below uses one bryophyte species considered to be an
+old-growth forest specialist and therefore specifically searched for
+during habitat inventories.</p>
 <div class="sourceCode" id="cb17"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">bryophyta_species</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rspatial.github.io/terra/reference/names.html" class="external-link">names</a></span><span class="op">(</span></span>
 <span>  <span class="fu"><a href="https://rspatial.github.io/terra/reference/sort.html" class="external-link">sort</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/table.html" class="external-link">table</a></span><span class="op">(</span><span class="va">bryophyta_one</span><span class="op">$</span><span class="va">species</span><span class="op">)</span>, decreasing <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
@@ -704,14 +737,17 @@ and can be used directly for subsetting.</p>
 <div class="section level2">
 <h2 id="screening-predictor-variance">Screening predictor variance<a class="anchor" aria-label="anchor" href="#screening-predictor-variance"></a>
 </h2>
-<p>Predictors with zero or extremely small variance in the data
-available for model fitting can create numerical problems and cannot
-meaningfully contribute to estimating an environmental response.
-<code><a href="../reference/screen_egv_variance.html">screen_egv_variance()</a></code> checks predictor variance across
-several SDM-relevant subsets rather than only across the complete
-dataset.</p>
+<p>Predictors that are constant across all data used for model fitting
+cannot provide an estimable environmental response. Low variance within
+an individual subset, however, does not necessarily imply that a
+predictor is uninformative: for example, a predictor may be constant
+among presences but variable among background records.
+<code><a href="../reference/screen_egv_variance.html">screen_egv_variance()</a></code> therefore distinguishes the presence,
+background, and combined-data checks and records which checks contribute
+to predictor selection.</p>
 <p>The example environmental raster contains five ecogeographical
-variables.</p>
+variables. The presence and background locations were split spatially
+into independent training and testing sets in the preceding section.</p>
 <div class="sourceCode" id="cb24"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">env</span> <span class="op">&lt;-</span> <span class="fu">terra</span><span class="fu">::</span><span class="fu"><a href="https://rspatial.github.io/terra/reference/rast.html" class="external-link">rast</a></span><span class="op">(</span><span class="va">egv_file</span><span class="op">)</span></span>
 <span><span class="va">env</span></span>
@@ -724,38 +760,97 @@ variables.</p>
 <span><span class="co">#&gt; names       :   egv_280,   egv_293,   egv_302,   egv_385,   egv_400</span></span>
 <span><span class="co">#&gt; min values  : -0.466794, -0.719917, -0.397964, -1.461203,  -0.37327</span></span>
 <span><span class="co">#&gt; max values  :   3.70894,  7.054723,  8.359298,  5.206886, 11.300995</span></span></code></pre></div>
-<p>For a compact vignette example, a subset of the training background
-is used to construct an <code><a href="https://consbiol-unibern.github.io/SDMtune/reference/SWD-class.html" class="external-link">SDMtune::SWD</a></code> object.</p>
+<p>We first prepare the training and independent-testing datasets
+<strong>once</strong>, using the same environmental predictors.
+<code><a href="https://consbiol-unibern.github.io/SDMtune/reference/prepareSWD.html" class="external-link">SDMtune::prepareSWD()</a></code> removes locations with missing values
+in any supplied environmental layer. Many example records fall outside
+the raster’s complete-data domain; the counts below show how many
+observations remain after extraction. All subsequent checks, fold
+assignments, model fitting, and evaluation use these retained
+records.</p>
 <div class="sourceCode" id="cb25"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">1</span><span class="op">)</span></span>
-<span></span>
-<span><span class="va">bg_screen</span> <span class="op">&lt;-</span> <span class="va">bg_train</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/sample.html" class="external-link">sample.int</a></span><span class="op">(</span><span class="fu"><a href="https://rspatial.github.io/terra/reference/dimensions.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">bg_train</span><span class="op">)</span>, <span class="fl">5000</span><span class="op">)</span>, <span class="op">]</span></span>
-<span></span>
-<span><span class="va">train_swd</span> <span class="op">&lt;-</span> <span class="fu">SDMtune</span><span class="fu">::</span><span class="fu"><a href="https://consbiol-unibern.github.io/SDMtune/reference/prepareSWD.html" class="external-link">prepareSWD</a></span><span class="op">(</span></span>
+<code class="sourceCode R"><span><span class="va">training_set</span> <span class="op">&lt;-</span> <span class="fu">SDMtune</span><span class="fu">::</span><span class="fu"><a href="https://consbiol-unibern.github.io/SDMtune/reference/prepareSWD.html" class="external-link">prepareSWD</a></span><span class="op">(</span></span>
 <span>  species <span class="op">=</span> <span class="st">"example_species"</span>,</span>
 <span>  p <span class="op">=</span> <span class="va">pres_train</span>,</span>
-<span>  a <span class="op">=</span> <span class="va">bg_screen</span>,</span>
-<span>  env <span class="op">=</span> <span class="va">env</span></span>
+<span>  a <span class="op">=</span> <span class="va">bg_train</span>,</span>
+<span>  env <span class="op">=</span> <span class="va">env</span>,</span>
+<span>  verbose <span class="op">=</span> <span class="cn">FALSE</span></span>
 <span><span class="op">)</span></span>
-<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Extracting predictor information for <span style="color: #00BB00;">presence</span> locations</span></span>
 <span><span class="co">#&gt; Warning: <span style="color: #BBBB00;">!</span> <span style="color: #0000BB;">2009</span> locations are NA for some environmental variables and have been</span></span>
 <span><span class="co">#&gt;   discarded</span></span>
-<span><span class="co">#&gt; <span style="color: #00BB00;">✔</span> Extracting predictor information for <span style="color: #00BB00;">presence</span> locations <span style="color: #B2B2B2;">[45ms]</span></span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Extracting predictor information for <span style="color: #00BB00;">absence/background</span> locations</span></span>
-<span><span class="co">#&gt; Warning: <span style="color: #BBBB00;">!</span> <span style="color: #0000BB;">4761</span> locations are NA for some environmental variables and have been</span></span>
+<span><span class="co">#&gt; Warning: <span style="color: #BBBB00;">!</span> <span style="color: #0000BB;">28679</span> locations are NA for some environmental variables and have been</span></span>
 <span><span class="co">#&gt;   discarded</span></span>
-<span><span class="co">#&gt; <span style="color: #00BB00;">✔</span> Extracting predictor information for <span style="color: #00BB00;">absence/background</span> locations <span style="color: #B2B2B2;">[171ms]</span></span></span>
-<span><span class="co">#&gt; </span></span></code></pre></div>
-<p>The environmental-domain check is added by supplying
-<code>env</code>.</p>
-<div class="sourceCode" id="cb26"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">variance_screen</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/screen_egv_variance.html">screen_egv_variance</a></span><span class="op">(</span></span>
-<span>  train <span class="op">=</span> <span class="va">train_swd</span>,</span>
+<span></span>
+<span><span class="va">testing_set</span> <span class="op">&lt;-</span> <span class="fu">SDMtune</span><span class="fu">::</span><span class="fu"><a href="https://consbiol-unibern.github.io/SDMtune/reference/prepareSWD.html" class="external-link">prepareSWD</a></span><span class="op">(</span></span>
+<span>  species <span class="op">=</span> <span class="st">"example_species"</span>,</span>
+<span>  p <span class="op">=</span> <span class="va">pres_test</span>,</span>
+<span>  a <span class="op">=</span> <span class="va">bg_test</span>,</span>
 <span>  env <span class="op">=</span> <span class="va">env</span>,</span>
-<span>  env_sample_n <span class="op">=</span> <span class="fl">5000</span>,</span>
-<span>  seed <span class="op">=</span> <span class="fl">1</span>,</span>
+<span>  verbose <span class="op">=</span> <span class="cn">FALSE</span></span>
+<span><span class="op">)</span></span>
+<span><span class="co">#&gt; Warning: <span style="color: #BBBB00;">!</span> <span style="color: #0000BB;">613</span> locations are NA for some environmental</span></span>
+<span><span class="co">#&gt; variables and have been discarded</span></span>
+<span><span class="co">#&gt; Warning: <span style="color: #BBBB00;">!</span> <span style="color: #0000BB;">8890</span> locations are NA for some environmental variables and have been</span></span>
+<span><span class="co">#&gt;   discarded</span></span>
+<span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span></span>
+<span>  training_presences <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/sum.html" class="external-link">sum</a></span><span class="op">(</span><span class="va">training_set</span><span class="op">@</span><span class="va">pa</span> <span class="op">==</span> <span class="fl">1</span><span class="op">)</span>,</span>
+<span>  training_background <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/sum.html" class="external-link">sum</a></span><span class="op">(</span><span class="va">training_set</span><span class="op">@</span><span class="va">pa</span> <span class="op">==</span> <span class="fl">0</span><span class="op">)</span>,</span>
+<span>  testing_presences <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/sum.html" class="external-link">sum</a></span><span class="op">(</span><span class="va">testing_set</span><span class="op">@</span><span class="va">pa</span> <span class="op">==</span> <span class="fl">1</span><span class="op">)</span>,</span>
+<span>  testing_background <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/sum.html" class="external-link">sum</a></span><span class="op">(</span><span class="va">testing_set</span><span class="op">@</span><span class="va">pa</span> <span class="op">==</span> <span class="fl">0</span><span class="op">)</span></span>
+<span><span class="op">)</span></span>
+<span><span class="co">#&gt;  training_presences training_background   testing_presences  testing_background </span></span>
+<span><span class="co">#&gt;                  75                1364                  81                1067</span></span></code></pre></div>
+<p>For spatial cross-validation, we assign folds <strong>after</strong>
+the environmental-value extraction so that the fold identifiers
+correspond exactly to rows in the training <code>SWD</code> object.
+<code><a href="https://jamiemkass.github.io/ENMeval/reference/partitions.html" class="external-link">ENMeval::get.block()</a></code> expects longitude-latitude
+coordinates; the projected EPSG:3059 coordinates are therefore converted
+to EPSG:4326 solely for constructing the folds. This does not change the
+predictor values stored in <code>training_set</code>.</p>
+<div class="sourceCode" id="cb26"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">as_lonlat</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">coords</span><span class="op">)</span> <span class="op">{</span></span>
+<span>  <span class="va">pts</span> <span class="op">&lt;-</span> <span class="fu">sf</span><span class="fu">::</span><span class="fu"><a href="https://r-spatial.github.io/sf/reference/st_as_sf.html" class="external-link">st_as_sf</a></span><span class="op">(</span></span>
+<span>    <span class="va">coords</span>,</span>
+<span>    coords <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"X"</span>, <span class="st">"Y"</span><span class="op">)</span>,</span>
+<span>    crs <span class="op">=</span> <span class="fl">3059</span></span>
+<span>  <span class="op">)</span></span>
+<span>  <span class="va">ll</span> <span class="op">&lt;-</span> <span class="fu">sf</span><span class="fu">::</span><span class="fu"><a href="https://r-spatial.github.io/sf/reference/st_coordinates.html" class="external-link">st_coordinates</a></span><span class="op">(</span><span class="fu">sf</span><span class="fu">::</span><span class="fu"><a href="https://r-spatial.github.io/sf/reference/st_transform.html" class="external-link">st_transform</a></span><span class="op">(</span><span class="va">pts</span>, <span class="fl">4326</span><span class="op">)</span><span class="op">)</span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span>lon <span class="op">=</span> <span class="va">ll</span><span class="op">[</span>, <span class="fl">1</span><span class="op">]</span>, lat <span class="op">=</span> <span class="va">ll</span><span class="op">[</span>, <span class="fl">2</span><span class="op">]</span><span class="op">)</span></span>
+<span><span class="op">}</span></span>
+<span></span>
+<span><span class="va">pres_idx</span> <span class="op">&lt;-</span> <span class="va">training_set</span><span class="op">@</span><span class="va">pa</span> <span class="op">==</span> <span class="fl">1</span></span>
+<span><span class="va">bg_idx</span> <span class="op">&lt;-</span> <span class="va">training_set</span><span class="op">@</span><span class="va">pa</span> <span class="op">==</span> <span class="fl">0</span></span>
+<span></span>
+<span><span class="va">block_folds</span> <span class="op">&lt;-</span> <span class="fu">ENMeval</span><span class="fu">::</span><span class="fu"><a href="https://jamiemkass.github.io/ENMeval/reference/partitions.html" class="external-link">get.block</a></span><span class="op">(</span></span>
+<span>  occs <span class="op">=</span> <span class="fu">as_lonlat</span><span class="op">(</span><span class="va">training_set</span><span class="op">@</span><span class="va">coords</span><span class="op">[</span><span class="va">pres_idx</span>, , drop <span class="op">=</span> <span class="cn">FALSE</span><span class="op">]</span><span class="op">)</span>,</span>
+<span>  bg <span class="op">=</span> <span class="fu">as_lonlat</span><span class="op">(</span><span class="va">training_set</span><span class="op">@</span><span class="va">coords</span><span class="op">[</span><span class="va">bg_idx</span>, , drop <span class="op">=</span> <span class="cn">FALSE</span><span class="op">]</span><span class="op">)</span></span>
+<span><span class="op">)</span></span></code></pre></div>
+<p>The screen checks presences, backgrounds, and their combination both
+across all training records and within each cross-validation training
+partition. Because <code>bg_folds</code> is supplied, the corresponding
+held-out background fold is excluded as well as the presence fold.
+Presence-only checks are retained as diagnostics but do not
+automatically remove predictors. The independent test set can also be
+diagnosed, while the default leakage-safe settings ensure that its
+values do not affect <code>keep</code> or <code>remove</code>.</p>
+<div class="sourceCode" id="cb27"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">variance_screen</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/screen_egv_variance.html">screen_egv_variance</a></span><span class="op">(</span></span>
+<span>  train <span class="op">=</span> <span class="va">training_set</span>,</span>
+<span>  test <span class="op">=</span> <span class="va">testing_set</span>,</span>
+<span>  occ_folds <span class="op">=</span> <span class="va">block_folds</span><span class="op">$</span><span class="va">occs.grp</span>,</span>
+<span>  bg_folds <span class="op">=</span> <span class="va">block_folds</span><span class="op">$</span><span class="va">bg.grp</span>,</span>
+<span>  env <span class="op">=</span> <span class="va">env</span>,</span>
+<span>  env_sample_n <span class="op">=</span> <span class="fl">5000L</span>,</span>
+<span>  seed <span class="op">=</span> <span class="fl">1L</span>,</span>
 <span>  sd_tol <span class="op">=</span> <span class="fl">0</span>,</span>
+<span>  check_presences <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>  check_background <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>  check_combined <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>  presence_affects_selection <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>  include_test_bg <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>  check_test <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>  test_affects_selection <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  verbose <span class="op">=</span> <span class="cn">FALSE</span></span>
 <span><span class="op">)</span></span>
 <span></span>
@@ -763,17 +858,22 @@ is used to construct an <code><a href="https://consbiol-unibern.github.io/SDMtun
 <span><span class="co">#&gt; [1] "egv_280" "egv_293" "egv_302" "egv_385" "egv_400"</span></span>
 <span><span class="va">variance_screen</span><span class="op">$</span><span class="va">remove</span></span>
 <span><span class="co">#&gt; character(0)</span></span></code></pre></div>
-<p>A predictor is retained only if it passes every requested check. The
-<code>diagnostics</code> component provides the standard deviation and
-failure reason for every evaluated predictor/subset combination.</p>
-<div class="sourceCode" id="cb27"><pre class="downlit sourceCode r">
+<p>A predictor is removed only if it fails at least one check marked
+<code>used_for_selection = TRUE</code>. A failed diagnostic-only check
+remains visible in <code>diagnostics</code> but does not affect
+predictor selection. Even though this example calculates diagnostic-only
+checks on the independent test, their results must not be used to revise
+the chosen predictor set or model. In a final analysis, it is preferable
+not to inspect the held-out test diagnostics until the model
+specification has been fixed.</p>
+<div class="sourceCode" id="cb28"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rspatial.github.io/terra/reference/headtail.html" class="external-link">head</a></span><span class="op">(</span><span class="va">variance_screen</span><span class="op">$</span><span class="va">diagnostics</span><span class="op">)</span></span>
 <span><span class="co">#&gt;      check subset data_source      group fold used_for_selection variable</span></span>
-<span><span class="co">#&gt; 1 training    all    training  presences &lt;NA&gt;               TRUE  egv_280</span></span>
-<span><span class="co">#&gt; 2 training    all    training  presences &lt;NA&gt;               TRUE  egv_293</span></span>
-<span><span class="co">#&gt; 3 training    all    training  presences &lt;NA&gt;               TRUE  egv_302</span></span>
-<span><span class="co">#&gt; 4 training    all    training  presences &lt;NA&gt;               TRUE  egv_385</span></span>
-<span><span class="co">#&gt; 5 training    all    training  presences &lt;NA&gt;               TRUE  egv_400</span></span>
+<span><span class="co">#&gt; 1 training    all    training  presences &lt;NA&gt;              FALSE  egv_280</span></span>
+<span><span class="co">#&gt; 2 training    all    training  presences &lt;NA&gt;              FALSE  egv_293</span></span>
+<span><span class="co">#&gt; 3 training    all    training  presences &lt;NA&gt;              FALSE  egv_302</span></span>
+<span><span class="co">#&gt; 4 training    all    training  presences &lt;NA&gt;              FALSE  egv_385</span></span>
+<span><span class="co">#&gt; 5 training    all    training  presences &lt;NA&gt;              FALSE  egv_400</span></span>
 <span><span class="co">#&gt; 6 training    all    training background &lt;NA&gt;               TRUE  egv_280</span></span>
 <span><span class="co">#&gt;   n_finite        sd failed reason</span></span>
 <span><span class="co">#&gt; 1       75 1.5562103  FALSE passed</span></span>
@@ -781,352 +881,830 @@ failure reason for every evaluated predictor/subset combination.</p>
 <span><span class="co">#&gt; 3       75 1.1651248  FALSE passed</span></span>
 <span><span class="co">#&gt; 4       75 0.4201842  FALSE passed</span></span>
 <span><span class="co">#&gt; 5       75 0.4363026  FALSE passed</span></span>
-<span><span class="co">#&gt; 6      239 1.5235595  FALSE passed</span></span></code></pre></div>
+<span><span class="co">#&gt; 6     1364 1.5236134  FALSE passed</span></span>
+<span></span>
+<span><span class="fu"><a href="https://rspatial.github.io/terra/reference/subset.html" class="external-link">subset</a></span><span class="op">(</span></span>
+<span>  <span class="va">variance_screen</span><span class="op">$</span><span class="va">diagnostics</span>,</span>
+<span>  <span class="va">failed</span> <span class="op">&amp;</span> <span class="op">!</span><span class="va">used_for_selection</span>,</span>
+<span>  select <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="va">check</span>, <span class="va">subset</span>, <span class="va">group</span>, <span class="va">variable</span>, <span class="va">sd</span>, <span class="va">reason</span><span class="op">)</span></span>
+<span><span class="op">)</span></span>
+<span><span class="co">#&gt; [1] check    subset   group    variable sd       reason  </span></span>
+<span><span class="co">#&gt; &lt;0 rows&gt; (or 0-length row.names)</span></span></code></pre></div>
+<p>The random environmental-domain check samples raster cells
+independently of the observed training background locations. It does
+<strong>not</strong> resample the background records already contained
+in <code>training_set</code>.</p>
+<p>A common predictor set screened across all CV partitions is
+convenient for this introductory example. For an unbiased assessment of
+a pipeline that selects predictors anew, that selection must instead be
+performed separately inside each CV training partition.</p>
+<div class="sourceCode" id="cb29"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rspatial.github.io/terra/reference/subset.html" class="external-link">subset</a></span><span class="op">(</span></span>
+<span>  <span class="va">variance_screen</span><span class="op">$</span><span class="va">diagnostics</span>,</span>
+<span>  <span class="va">check</span> <span class="op">==</span> <span class="st">"cv_training"</span>,</span>
+<span>  select <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span></span>
+<span>    <span class="va">check</span>, <span class="va">subset</span>, <span class="va">group</span>, <span class="va">fold</span>,</span>
+<span>    <span class="va">variable</span>, <span class="va">sd</span>, <span class="va">failed</span>, <span class="va">used_for_selection</span></span>
+<span>  <span class="op">)</span></span>
+<span><span class="op">)</span></span>
+<span><span class="co">#&gt;          check          subset      group fold variable        sd failed</span></span>
+<span><span class="co">#&gt; 16 cv_training held_out_fold_2  presences    2  egv_280 1.5974080  FALSE</span></span>
+<span><span class="co">#&gt; 17 cv_training held_out_fold_2  presences    2  egv_293 1.7213387  FALSE</span></span>
+<span><span class="co">#&gt; 18 cv_training held_out_fold_2  presences    2  egv_302 1.1385672  FALSE</span></span>
+<span><span class="co">#&gt; 19 cv_training held_out_fold_2  presences    2  egv_385 0.3446358  FALSE</span></span>
+<span><span class="co">#&gt; 20 cv_training held_out_fold_2  presences    2  egv_400 0.1296358  FALSE</span></span>
+<span><span class="co">#&gt; 21 cv_training held_out_fold_2 background    2  egv_280 1.5930103  FALSE</span></span>
+<span><span class="co">#&gt; 22 cv_training held_out_fold_2 background    2  egv_293 1.6918404  FALSE</span></span>
+<span><span class="co">#&gt; 23 cv_training held_out_fold_2 background    2  egv_302 1.5554488  FALSE</span></span>
+<span><span class="co">#&gt; 24 cv_training held_out_fold_2 background    2  egv_385 0.4753539  FALSE</span></span>
+<span><span class="co">#&gt; 25 cv_training held_out_fold_2 background    2  egv_400 0.4171508  FALSE</span></span>
+<span><span class="co">#&gt; 26 cv_training held_out_fold_2   combined    2  egv_280 1.6497089  FALSE</span></span>
+<span><span class="co">#&gt; 27 cv_training held_out_fold_2   combined    2  egv_293 1.8766848  FALSE</span></span>
+<span><span class="co">#&gt; 28 cv_training held_out_fold_2   combined    2  egv_302 1.5449395  FALSE</span></span>
+<span><span class="co">#&gt; 29 cv_training held_out_fold_2   combined    2  egv_385 0.4672986  FALSE</span></span>
+<span><span class="co">#&gt; 30 cv_training held_out_fold_2   combined    2  egv_400 0.4049559  FALSE</span></span>
+<span><span class="co">#&gt; 31 cv_training held_out_fold_4  presences    4  egv_280 1.6395785  FALSE</span></span>
+<span><span class="co">#&gt; 32 cv_training held_out_fold_4  presences    4  egv_293 1.8506224  FALSE</span></span>
+<span><span class="co">#&gt; 33 cv_training held_out_fold_4  presences    4  egv_302 1.1297366  FALSE</span></span>
+<span><span class="co">#&gt; 34 cv_training held_out_fold_4  presences    4  egv_385 0.4651644  FALSE</span></span>
+<span><span class="co">#&gt; 35 cv_training held_out_fold_4  presences    4  egv_400 0.4948771  FALSE</span></span>
+<span><span class="co">#&gt; 36 cv_training held_out_fold_4 background    4  egv_280 1.5366295  FALSE</span></span>
+<span><span class="co">#&gt; 37 cv_training held_out_fold_4 background    4  egv_293 1.6757226  FALSE</span></span>
+<span><span class="co">#&gt; 38 cv_training held_out_fold_4 background    4  egv_302 1.5804242  FALSE</span></span>
+<span><span class="co">#&gt; 39 cv_training held_out_fold_4 background    4  egv_385 0.8740921  FALSE</span></span>
+<span><span class="co">#&gt; 40 cv_training held_out_fold_4 background    4  egv_400 0.9401085  FALSE</span></span>
+<span><span class="co">#&gt; 41 cv_training held_out_fold_4   combined    4  egv_280 1.5906969  FALSE</span></span>
+<span><span class="co">#&gt; 42 cv_training held_out_fold_4   combined    4  egv_293 1.8192609  FALSE</span></span>
+<span><span class="co">#&gt; 43 cv_training held_out_fold_4   combined    4  egv_302 1.5794229  FALSE</span></span>
+<span><span class="co">#&gt; 44 cv_training held_out_fold_4   combined    4  egv_385 0.8570493  FALSE</span></span>
+<span><span class="co">#&gt; 45 cv_training held_out_fold_4   combined    4  egv_400 0.9198140  FALSE</span></span>
+<span><span class="co">#&gt; 46 cv_training held_out_fold_3  presences    3  egv_280 1.5176560  FALSE</span></span>
+<span><span class="co">#&gt; 47 cv_training held_out_fold_3  presences    3  egv_293 1.7655457  FALSE</span></span>
+<span><span class="co">#&gt; 48 cv_training held_out_fold_3  presences    3  egv_302 1.2211444  FALSE</span></span>
+<span><span class="co">#&gt; 49 cv_training held_out_fold_3  presences    3  egv_385 0.3984288  FALSE</span></span>
+<span><span class="co">#&gt; 50 cv_training held_out_fold_3  presences    3  egv_400 0.4954987  FALSE</span></span>
+<span><span class="co">#&gt; 51 cv_training held_out_fold_3 background    3  egv_280 1.4932623  FALSE</span></span>
+<span><span class="co">#&gt; 52 cv_training held_out_fold_3 background    3  egv_293 1.5232976  FALSE</span></span>
+<span><span class="co">#&gt; 53 cv_training held_out_fold_3 background    3  egv_302 1.5333896  FALSE</span></span>
+<span><span class="co">#&gt; 54 cv_training held_out_fold_3 background    3  egv_385 0.7893809  FALSE</span></span>
+<span><span class="co">#&gt; 55 cv_training held_out_fold_3 background    3  egv_400 0.8197605  FALSE</span></span>
+<span><span class="co">#&gt; 56 cv_training held_out_fold_3   combined    3  egv_280 1.5475879  FALSE</span></span>
+<span><span class="co">#&gt; 57 cv_training held_out_fold_3   combined    3  egv_293 1.6529372  FALSE</span></span>
+<span><span class="co">#&gt; 58 cv_training held_out_fold_3   combined    3  egv_302 1.5358597  FALSE</span></span>
+<span><span class="co">#&gt; 59 cv_training held_out_fold_3   combined    3  egv_385 0.7766520  FALSE</span></span>
+<span><span class="co">#&gt; 60 cv_training held_out_fold_3   combined    3  egv_400 0.8083519  FALSE</span></span>
+<span><span class="co">#&gt; 61 cv_training held_out_fold_1  presences    1  egv_280 1.4495707  FALSE</span></span>
+<span><span class="co">#&gt; 62 cv_training held_out_fold_1  presences    1  egv_293 1.9947205  FALSE</span></span>
+<span><span class="co">#&gt; 63 cv_training held_out_fold_1  presences    1  egv_302 1.1715437  FALSE</span></span>
+<span><span class="co">#&gt; 64 cv_training held_out_fold_1  presences    1  egv_385 0.4494924  FALSE</span></span>
+<span><span class="co">#&gt; 65 cv_training held_out_fold_1  presences    1  egv_400 0.4938591  FALSE</span></span>
+<span><span class="co">#&gt; 66 cv_training held_out_fold_1 background    1  egv_280 1.4944325  FALSE</span></span>
+<span><span class="co">#&gt; 67 cv_training held_out_fold_1 background    1  egv_293 1.5744318  FALSE</span></span>
+<span><span class="co">#&gt; 68 cv_training held_out_fold_1 background    1  egv_302 1.5523231  FALSE</span></span>
+<span><span class="co">#&gt; 69 cv_training held_out_fold_1 background    1  egv_385 0.7867514  FALSE</span></span>
+<span><span class="co">#&gt; 70 cv_training held_out_fold_1 background    1  egv_400 0.8016187  FALSE</span></span>
+<span><span class="co">#&gt; 71 cv_training held_out_fold_1   combined    1  egv_280 1.5491069  FALSE</span></span>
+<span><span class="co">#&gt; 72 cv_training held_out_fold_1   combined    1  egv_293 1.7091390  FALSE</span></span>
+<span><span class="co">#&gt; 73 cv_training held_out_fold_1   combined    1  egv_302 1.5552666  FALSE</span></span>
+<span><span class="co">#&gt; 74 cv_training held_out_fold_1   combined    1  egv_385 0.7753450  FALSE</span></span>
+<span><span class="co">#&gt; 75 cv_training held_out_fold_1   combined    1  egv_400 0.7909909  FALSE</span></span>
+<span><span class="co">#&gt;    used_for_selection</span></span>
+<span><span class="co">#&gt; 16              FALSE</span></span>
+<span><span class="co">#&gt; 17              FALSE</span></span>
+<span><span class="co">#&gt; 18              FALSE</span></span>
+<span><span class="co">#&gt; 19              FALSE</span></span>
+<span><span class="co">#&gt; 20              FALSE</span></span>
+<span><span class="co">#&gt; 21               TRUE</span></span>
+<span><span class="co">#&gt; 22               TRUE</span></span>
+<span><span class="co">#&gt; 23               TRUE</span></span>
+<span><span class="co">#&gt; 24               TRUE</span></span>
+<span><span class="co">#&gt; 25               TRUE</span></span>
+<span><span class="co">#&gt; 26               TRUE</span></span>
+<span><span class="co">#&gt; 27               TRUE</span></span>
+<span><span class="co">#&gt; 28               TRUE</span></span>
+<span><span class="co">#&gt; 29               TRUE</span></span>
+<span><span class="co">#&gt; 30               TRUE</span></span>
+<span><span class="co">#&gt; 31              FALSE</span></span>
+<span><span class="co">#&gt; 32              FALSE</span></span>
+<span><span class="co">#&gt; 33              FALSE</span></span>
+<span><span class="co">#&gt; 34              FALSE</span></span>
+<span><span class="co">#&gt; 35              FALSE</span></span>
+<span><span class="co">#&gt; 36               TRUE</span></span>
+<span><span class="co">#&gt; 37               TRUE</span></span>
+<span><span class="co">#&gt; 38               TRUE</span></span>
+<span><span class="co">#&gt; 39               TRUE</span></span>
+<span><span class="co">#&gt; 40               TRUE</span></span>
+<span><span class="co">#&gt; 41               TRUE</span></span>
+<span><span class="co">#&gt; 42               TRUE</span></span>
+<span><span class="co">#&gt; 43               TRUE</span></span>
+<span><span class="co">#&gt; 44               TRUE</span></span>
+<span><span class="co">#&gt; 45               TRUE</span></span>
+<span><span class="co">#&gt; 46              FALSE</span></span>
+<span><span class="co">#&gt; 47              FALSE</span></span>
+<span><span class="co">#&gt; 48              FALSE</span></span>
+<span><span class="co">#&gt; 49              FALSE</span></span>
+<span><span class="co">#&gt; 50              FALSE</span></span>
+<span><span class="co">#&gt; 51               TRUE</span></span>
+<span><span class="co">#&gt; 52               TRUE</span></span>
+<span><span class="co">#&gt; 53               TRUE</span></span>
+<span><span class="co">#&gt; 54               TRUE</span></span>
+<span><span class="co">#&gt; 55               TRUE</span></span>
+<span><span class="co">#&gt; 56               TRUE</span></span>
+<span><span class="co">#&gt; 57               TRUE</span></span>
+<span><span class="co">#&gt; 58               TRUE</span></span>
+<span><span class="co">#&gt; 59               TRUE</span></span>
+<span><span class="co">#&gt; 60               TRUE</span></span>
+<span><span class="co">#&gt; 61              FALSE</span></span>
+<span><span class="co">#&gt; 62              FALSE</span></span>
+<span><span class="co">#&gt; 63              FALSE</span></span>
+<span><span class="co">#&gt; 64              FALSE</span></span>
+<span><span class="co">#&gt; 65              FALSE</span></span>
+<span><span class="co">#&gt; 66               TRUE</span></span>
+<span><span class="co">#&gt; 67               TRUE</span></span>
+<span><span class="co">#&gt; 68               TRUE</span></span>
+<span><span class="co">#&gt; 69               TRUE</span></span>
+<span><span class="co">#&gt; 70               TRUE</span></span>
+<span><span class="co">#&gt; 71               TRUE</span></span>
+<span><span class="co">#&gt; 72               TRUE</span></span>
+<span><span class="co">#&gt; 73               TRUE</span></span>
+<span><span class="co">#&gt; 74               TRUE</span></span>
+<span><span class="co">#&gt; 75               TRUE</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="fitting-a-small-maxnet-model">Fitting a small maxnet model<a class="anchor" aria-label="anchor" href="#fitting-a-small-maxnet-model"></a>
 </h2>
-<p>The package is designed to support, rather than replace, SDM
-software. The following compact example fits a <code>maxnet</code> model
-after the independent split created above. Only predictors retained by
-the variance screen are used.</p>
-<p>First, extract environmental values for the training and
-independent-testing locations.</p>
-<div class="sourceCode" id="cb28"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">training_set</span> <span class="op">&lt;-</span> <span class="fu">SDMtune</span><span class="fu">::</span><span class="fu"><a href="https://consbiol-unibern.github.io/SDMtune/reference/prepareSWD.html" class="external-link">prepareSWD</a></span><span class="op">(</span></span>
-<span>  species <span class="op">=</span> <span class="st">"example_species"</span>,</span>
-<span>  p <span class="op">=</span> <span class="va">pres_train</span>,</span>
-<span>  a <span class="op">=</span> <span class="va">bg_train</span>,</span>
-<span>  env <span class="op">=</span> <span class="va">env</span></span>
-<span><span class="op">)</span></span>
-<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Extracting predictor information for <span style="color: #00BB00;">presence</span> locations</span></span>
-<span><span class="co">#&gt; Warning: <span style="color: #BBBB00;">!</span> <span style="color: #0000BB;">2009</span> locations are NA for some environmental variables and have been</span></span>
-<span><span class="co">#&gt;   discarded</span></span>
-<span><span class="co">#&gt; <span style="color: #00BB00;">✔</span> Extracting predictor information for <span style="color: #00BB00;">presence</span> locations <span style="color: #B2B2B2;">[27ms]</span></span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Extracting predictor information for <span style="color: #00BB00;">absence/background</span> locations</span></span>
-<span><span class="co">#&gt; Warning: <span style="color: #BBBB00;">!</span> <span style="color: #0000BB;">28679</span> locations are NA for some environmental variables and have been</span></span>
-<span><span class="co">#&gt;   discarded</span></span>
-<span><span class="co">#&gt; <span style="color: #00BB00;">✔</span> Extracting predictor information for <span style="color: #00BB00;">absence/background</span> locations <span style="color: #B2B2B2;">[64ms]</span></span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="va">training_set</span><span class="op">=</span><span class="fu">SDMtune</span><span class="fu">::</span><span class="fu"><a href="https://consbiol-unibern.github.io/SDMtune/reference/addSamplesToBg.html" class="external-link">addSamplesToBg</a></span><span class="op">(</span><span class="va">training_set</span><span class="op">)</span></span>
+<p><code>sdmhelpers</code> supports rather than replaces SDM software.
+Here we fit a small illustrative <code>maxnet</code> model to the
+training data using <strong>only the predictors retained by the variance
+screen</strong>. This model is for demonstration; the cross-validation
+example below can be used to compare alternative feature classes and
+regularisation multipliers before fitting a final model.</p>
+<div class="sourceCode" id="cb30"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">selected_vars</span> <span class="op">&lt;-</span> <span class="va">variance_screen</span><span class="op">$</span><span class="va">keep</span></span>
 <span></span>
-<span><span class="va">testing_set</span> <span class="op">&lt;-</span> <span class="fu">SDMtune</span><span class="fu">::</span><span class="fu"><a href="https://consbiol-unibern.github.io/SDMtune/reference/prepareSWD.html" class="external-link">prepareSWD</a></span><span class="op">(</span></span>
-<span>  species <span class="op">=</span> <span class="st">"example_species"</span>,</span>
-<span>  p <span class="op">=</span> <span class="va">pres_test</span>,</span>
-<span>  a <span class="op">=</span> <span class="va">bg_test</span>,</span>
-<span>  env <span class="op">=</span> <span class="va">env</span></span>
-<span><span class="op">)</span></span>
-<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Extracting predictor information for <span style="color: #00BB00;">presence</span> locations</span></span>
-<span><span class="co">#&gt; Warning: <span style="color: #BBBB00;">!</span> <span style="color: #0000BB;">613</span> locations are NA for some environmental</span></span>
-<span><span class="co">#&gt; variables and have been discarded</span></span>
-<span><span class="co">#&gt; <span style="color: #00BB00;">✔</span> Extracting predictor information for <span style="color: #00BB00;">presence</span> locations <span style="color: #B2B2B2;">[26ms]</span></span></span>
-<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Extracting predictor information for <span style="color: #00BB00;">absence/background</span> locations</span></span>
-<span><span class="co">#&gt; Warning: <span style="color: #BBBB00;">!</span> <span style="color: #0000BB;">8890</span> locations are NA for some environmental variables and have been</span></span>
-<span><span class="co">#&gt;   discarded</span></span>
-<span><span class="co">#&gt; <span style="color: #00BB00;">✔</span> Extracting predictor information for <span style="color: #00BB00;">absence/background</span> locations <span style="color: #B2B2B2;">[50ms]</span></span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="va">testing_set</span><span class="op">=</span><span class="fu">SDMtune</span><span class="fu">::</span><span class="fu"><a href="https://consbiol-unibern.github.io/SDMtune/reference/addSamplesToBg.html" class="external-link">addSamplesToBg</a></span><span class="op">(</span><span class="va">testing_set</span><span class="op">)</span></span></code></pre></div>
-<p>Fit the model using presences (<code>1</code>) and background
-(<code>0</code>).</p>
-<div class="sourceCode" id="cb29"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">maxnet_model</span> <span class="op">&lt;-</span> <span class="fu">maxnet</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/maxnet/man/maxnet.html" class="external-link">maxnet</a></span><span class="op">(</span></span>
+<span><span class="kw">if</span> <span class="op">(</span><span class="op">!</span><span class="fu"><a href="https://rdrr.io/r/base/length.html" class="external-link">length</a></span><span class="op">(</span><span class="va">selected_vars</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span>
+<span>  <span class="kw"><a href="https://rdrr.io/r/base/stop.html" class="external-link">stop</a></span><span class="op">(</span><span class="st">"No predictors passed variance screening."</span><span class="op">)</span></span>
+<span><span class="op">}</span></span>
+<span></span>
+<span><span class="va">maxnet_model</span> <span class="op">&lt;-</span> <span class="fu">maxnet</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/maxnet/man/maxnet.html" class="external-link">maxnet</a></span><span class="op">(</span></span>
 <span>  p <span class="op">=</span> <span class="va">training_set</span><span class="op">@</span><span class="va">pa</span>,</span>
-<span>  data <span class="op">=</span> <span class="va">training_set</span><span class="op">@</span><span class="va">data</span></span>
+<span>  data <span class="op">=</span> <span class="va">training_set</span><span class="op">@</span><span class="va">data</span><span class="op">[</span>, <span class="va">selected_vars</span>, drop <span class="op">=</span> <span class="cn">FALSE</span><span class="op">]</span>,</span>
+<span>  addsamplestobackground <span class="op">=</span> <span class="cn">TRUE</span></span>
 <span><span class="op">)</span></span></code></pre></div>
+<p>Following the conventional Maxent approach, presence locations not
+already represented in the background are additionally included as
+background samples during model fitting. This behaviour is enabled by
+<code>addsamplestobackground = TRUE</code>, which is also the default in
+<code>maxnet</code>.</p>
+<p>We do not separately call <code><a href="https://consbiol-unibern.github.io/SDMtune/reference/addSamplesToBg.html" class="external-link">SDMtune::addSamplesToBg()</a></code>
+because <code>maxnet</code> handles this operation internally.
+Consequently, the original <code>training_set</code> object remains
+unchanged, and its presence and background records can be used
+consistently for subsequent evaluation and cross-validation.</p>
+<p>Importantly, this operation uses only the training data. Independent
+testing presences and background records remain withheld from model
+fitting.</p>
 </div>
 <div class="section level2">
 <h2 id="evaluating-models-with-tss">Evaluating models with TSS<a class="anchor" aria-label="anchor" href="#evaluating-models-with-tss"></a>
 </h2>
-<p>The true skill statistic is</p>
+<p>The true skill statistic (TSS) is defined as</p>
 <p><span class="math display">\[
-\mathrm{TSS} = \mathrm{sensitivity} + \mathrm{specificity} - 1,
+\mathrm{TSS} = \mathrm{sensitivity} + \mathrm{specificity} - 1.
 \]</span></p>
-<p>and was proposed for SDM evaluation as an alternative to measures
-such as Cohen’s kappa <span class="citation">(<a href="#ref-allouche2006">Allouche et al. 2006</a>)</span>.</p>
-<p><code><a href="../reference/max_tss.html">max_tss()</a></code> evaluates all unique finite prediction
-thresholds and returns the threshold that maximizes TSS together with
-sensitivity and specificity.</p>
-<p>For presence-background models, background locations are not
-confirmed absences. Consequently, the value reported as specificity is
-operationally the proportion of background records classified as
-negative, and the resulting TSS should be interpreted as
+<p><code><a href="../reference/max_tss.html">max_tss()</a></code> evaluates candidate thresholds and returns the
+threshold that maximizes TSS, together with sensitivity and specificity.
+For presence-background data, background locations are not confirmed
+absences; thus the reported specificity is the proportion of background
+records classified as negative, and TSS should be interpreted as
 presence-background discrimination rather than classification accuracy
-against known true absences.</p>
-<div class="sourceCode" id="cb30"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">p_pos</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rspatial.github.io/terra/reference/predict.html" class="external-link">predict</a></span><span class="op">(</span></span>
-<span>  <span class="va">maxnet_model</span>,</span>
-<span>  newdata <span class="op">=</span> <span class="va">testing_set</span><span class="op">@</span><span class="va">data</span><span class="op">[</span><span class="va">testing_set</span><span class="op">@</span><span class="va">pa</span> <span class="op">==</span> <span class="fl">1</span>, <span class="op">]</span>,</span>
-<span>  type <span class="op">=</span> <span class="st">"cloglog"</span></span>
-<span><span class="op">)</span></span>
-<span></span>
-<span><span class="va">p_neg</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rspatial.github.io/terra/reference/predict.html" class="external-link">predict</a></span><span class="op">(</span></span>
-<span>  <span class="va">maxnet_model</span>,</span>
-<span>  newdata <span class="op">=</span> <span class="va">testing_set</span><span class="op">@</span><span class="va">data</span><span class="op">[</span><span class="va">testing_set</span><span class="op">@</span><span class="va">pa</span> <span class="op">==</span> <span class="fl">0</span>, <span class="op">]</span>,</span>
-<span>  type <span class="op">=</span> <span class="st">"cloglog"</span></span>
-<span><span class="op">)</span></span>
-<span></span>
-<span><span class="va">tss_result</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/max_tss.html">max_tss</a></span><span class="op">(</span></span>
-<span>  p_pos <span class="op">=</span> <span class="va">p_pos</span>,</span>
-<span>  p_neg <span class="op">=</span> <span class="va">p_neg</span></span>
-<span><span class="op">)</span></span>
-<span></span>
-<span><span class="va">tss_result</span></span>
-<span><span class="co">#&gt;         tss   threshold sensitivity specificity </span></span>
-<span><span class="co">#&gt;   0.5388469   0.2693770   0.8765432   0.6623037</span></span></code></pre></div>
-<p>The selected threshold can then be used to convert continuous
-predictions into binary classifications if a binary map or confusion
-matrix is required.</p>
+against known absences <span class="citation">(<a href="#ref-allouche2006">Allouche et al. 2006</a>)</span>.</p>
+<p>Critically, selecting a threshold using independent-test predictions
+and then reporting TSS on that same test set would yield a
+test-optimized estimate. Here we select the threshold using
+<strong>training predictions only</strong>, and then apply it unchanged
+to the withheld independent test. The resulting independent-test TSS is
+not optimized on test labels, although the threshold chosen on fitting
+data may be optimistic for the training sample itself.</p>
 <div class="sourceCode" id="cb31"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">threshold</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/unname.html" class="external-link">unname</a></span><span class="op">(</span><span class="va">tss_result</span><span class="op">[</span><span class="st">"threshold"</span><span class="op">]</span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="va">train_p_pos</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rspatial.github.io/terra/reference/predict.html" class="external-link">predict</a></span><span class="op">(</span></span>
+<span>  <span class="va">maxnet_model</span>,</span>
+<span>  newdata <span class="op">=</span> <span class="va">training_set</span><span class="op">@</span><span class="va">data</span><span class="op">[</span></span>
+<span>    <span class="va">training_set</span><span class="op">@</span><span class="va">pa</span> <span class="op">==</span> <span class="fl">1</span>, <span class="va">selected_vars</span>, drop <span class="op">=</span> <span class="cn">FALSE</span></span>
+<span>  <span class="op">]</span>,</span>
+<span>  type <span class="op">=</span> <span class="st">"cloglog"</span></span>
+<span><span class="op">)</span></span>
 <span></span>
-<span><span class="va">presence_class</span> <span class="op">&lt;-</span> <span class="va">p_pos</span> <span class="op">&gt;=</span> <span class="va">threshold</span></span>
-<span><span class="va">background_class</span> <span class="op">&lt;-</span> <span class="va">p_neg</span> <span class="op">&gt;=</span> <span class="va">threshold</span></span>
+<span><span class="va">train_p_bg</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rspatial.github.io/terra/reference/predict.html" class="external-link">predict</a></span><span class="op">(</span></span>
+<span>  <span class="va">maxnet_model</span>,</span>
+<span>  newdata <span class="op">=</span> <span class="va">training_set</span><span class="op">@</span><span class="va">data</span><span class="op">[</span></span>
+<span>    <span class="va">training_set</span><span class="op">@</span><span class="va">pa</span> <span class="op">==</span> <span class="fl">0</span>, <span class="va">selected_vars</span>, drop <span class="op">=</span> <span class="cn">FALSE</span></span>
+<span>  <span class="op">]</span>,</span>
+<span>  type <span class="op">=</span> <span class="st">"cloglog"</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">training_tss</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/max_tss.html">max_tss</a></span><span class="op">(</span>p_pos <span class="op">=</span> <span class="va">train_p_pos</span>, p_neg <span class="op">=</span> <span class="va">train_p_bg</span><span class="op">)</span></span>
+<span><span class="va">threshold</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/unname.html" class="external-link">unname</a></span><span class="op">(</span><span class="va">training_tss</span><span class="op">[</span><span class="st">"threshold"</span><span class="op">]</span><span class="op">)</span></span>
+<span><span class="va">training_tss</span></span>
+<span><span class="co">#&gt;         tss   threshold sensitivity specificity </span></span>
+<span><span class="co">#&gt;   0.7227370   0.1993446   0.9866667   0.7360704</span></span></code></pre></div>
+<div class="sourceCode" id="cb32"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">test_p_pos</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rspatial.github.io/terra/reference/predict.html" class="external-link">predict</a></span><span class="op">(</span></span>
+<span>  <span class="va">maxnet_model</span>,</span>
+<span>  newdata <span class="op">=</span> <span class="va">testing_set</span><span class="op">@</span><span class="va">data</span><span class="op">[</span></span>
+<span>    <span class="va">testing_set</span><span class="op">@</span><span class="va">pa</span> <span class="op">==</span> <span class="fl">1</span>, <span class="va">selected_vars</span>, drop <span class="op">=</span> <span class="cn">FALSE</span></span>
+<span>  <span class="op">]</span>,</span>
+<span>  type <span class="op">=</span> <span class="st">"cloglog"</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">test_p_bg</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rspatial.github.io/terra/reference/predict.html" class="external-link">predict</a></span><span class="op">(</span></span>
+<span>  <span class="va">maxnet_model</span>,</span>
+<span>  newdata <span class="op">=</span> <span class="va">testing_set</span><span class="op">@</span><span class="va">data</span><span class="op">[</span></span>
+<span>    <span class="va">testing_set</span><span class="op">@</span><span class="va">pa</span> <span class="op">==</span> <span class="fl">0</span>, <span class="va">selected_vars</span>, drop <span class="op">=</span> <span class="cn">FALSE</span></span>
+<span>  <span class="op">]</span>,</span>
+<span>  type <span class="op">=</span> <span class="st">"cloglog"</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">independent_sensitivity</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rspatial.github.io/terra/reference/summarize-generics.html" class="external-link">mean</a></span><span class="op">(</span><span class="va">test_p_pos</span> <span class="op">&gt;=</span> <span class="va">threshold</span><span class="op">)</span></span>
+<span><span class="va">independent_background_specificity</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rspatial.github.io/terra/reference/summarize-generics.html" class="external-link">mean</a></span><span class="op">(</span><span class="va">test_p_bg</span> <span class="op">&lt;</span> <span class="va">threshold</span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span></span>
-<span>  sensitivity <span class="op">=</span> <span class="fu"><a href="https://rspatial.github.io/terra/reference/summarize-generics.html" class="external-link">mean</a></span><span class="op">(</span><span class="va">presence_class</span><span class="op">)</span>,</span>
-<span>  background_specificity <span class="op">=</span> <span class="fu"><a href="https://rspatial.github.io/terra/reference/summarize-generics.html" class="external-link">mean</a></span><span class="op">(</span><span class="op">!</span><span class="va">background_class</span><span class="op">)</span></span>
+<span>  threshold_from_training <span class="op">=</span> <span class="va">threshold</span>,</span>
+<span>  sensitivity <span class="op">=</span> <span class="va">independent_sensitivity</span>,</span>
+<span>  background_specificity <span class="op">=</span> <span class="va">independent_background_specificity</span>,</span>
+<span>  independent_TSS <span class="op">=</span> <span class="va">independent_sensitivity</span> <span class="op">+</span></span>
+<span>    <span class="va">independent_background_specificity</span> <span class="op">-</span> <span class="fl">1</span></span>
 <span><span class="op">)</span></span>
-<span><span class="co">#&gt;            sensitivity background_specificity </span></span>
-<span><span class="co">#&gt;              0.8765432              0.6623037</span></span></code></pre></div>
+<span><span class="co">#&gt; threshold_from_training             sensitivity  background_specificity </span></span>
+<span><span class="co">#&gt;               0.1993446               0.9012346               0.6269916 </span></span>
+<span><span class="co">#&gt;         independent_TSS </span></span>
+<span><span class="co">#&gt;               0.5282261</span></span></code></pre></div>
+<p>The same threshold can be applied to predictions at raster cells when
+a binary suitability map is needed. For an independent final evaluation,
+the threshold and all predictor-selection and tuning decisions should be
+fixed before the held-out test predictions are examined.</p>
 </div>
 <div class="section level2">
 <h2 id="cross-validation-tss-with-enmeval">Cross-validation TSS with ENMeval<a class="anchor" aria-label="anchor" href="#cross-validation-tss-with-enmeval"></a>
 </h2>
-<p>The independent testing set created above is reserved for evaluating
-the final model and should not be used during model tuning. Alternative
-model settings can instead be compared by cross-validation using only
-the training data. Spatially structured cross-validation is particularly
-useful when observations are spatially autocorrelated because it reduces
-spatial dependence between calibration and validation data and provides
-a more stringent assessment of spatial transferability than random
-partitioning <span class="citation">(<a href="#ref-roberts2017">Roberts
-et al. 2017</a>)</span>.</p>
-<p>ENMeval provides several approaches for partitioning occurrence and
-background records and for evaluating alternative Maxent and
-<code>maxnet</code> model settings <span class="citation">(<a href="#ref-muscarella2014">Muscarella et al. 2014</a>; <a href="#ref-kass2021">Kass et al. 2021</a>)</span>. In this example, the
-training records are divided into four geographically structured groups
-using <code><a href="https://jamiemkass.github.io/ENMeval/reference/partitions.html" class="external-link">ENMeval::get.block()</a></code>.</p>
-<div class="sourceCode" id="cb32"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">block_folds</span> <span class="op">&lt;-</span> <span class="fu">ENMeval</span><span class="fu">::</span><span class="fu"><a href="https://jamiemkass.github.io/ENMeval/reference/partitions.html" class="external-link">get.block</a></span><span class="op">(</span>occ <span class="op">=</span> <span class="va">training_set</span><span class="op">@</span><span class="va">coords</span><span class="op">[</span><span class="va">training_set</span><span class="op">@</span><span class="va">pa</span> <span class="op">==</span> <span class="fl">1</span>, <span class="op">]</span>, </span>
-<span>                                  bg <span class="op">=</span> <span class="va">training_set</span><span class="op">@</span><span class="va">coords</span><span class="op">[</span><span class="va">training_set</span><span class="op">@</span><span class="va">pa</span> <span class="op">==</span> <span class="fl">0</span>, <span class="op">]</span><span class="op">)</span></span></code></pre></div>
-<p>The block method divides occurrence localities into four spatial
-groups and assigns background records to the corresponding geographic
-partitions. Because the example coordinates are in the projected LKS-92
-/ Latvia TM coordinate reference system, the partitions are defined
-using projected X and Y coordinates rather than geographic longitude and
-latitude.</p>
-<p>The resulting fold identifiers are supplied to
-<code><a href="https://jamiemkass.github.io/ENMeval/reference/ENMevaluate.html" class="external-link">ENMevaluate()</a></code> as user-defined partitions. This makes it
-possible to use the same spatial groups for both presence and background
-observations while retaining explicit control over the cross-validation
-design.</p>
-<p>For this example, three feature-class combinations and three
-regularization multipliers are evaluated, producing nine candidate model
-settings. Linear (<code>L</code>), quadratic (<code>Q</code>), and
-combined linear-quadratic (<code>LQ</code>) feature classes control the
-shapes of fitted environmental responses, whereas the regularization
-multiplier controls the strength of penalization and therefore model
-complexity.</p>
+<p>The independent testing set created earlier is reserved for the final
+assessment of the fitted model. Model tuning instead uses spatial
+cross-validation of the training data, keeping the independent testing
+set out of predictor-selection and tuning decisions. Spatial resampling
+can reduce dependence between model calibration and validation
+observations when the intended prediction involves geographic transfer
+<span class="citation">(<a href="#ref-roberts2017">Roberts et al.
+2017</a>)</span>.</p>
+<p><code>ENMeval</code> supports spatial partitions and multiple
+complexity settings for Maxent and <code>maxnet</code> models <span class="citation">(<a href="#ref-muscarella2014">Muscarella et al.
+2014</a>; <a href="#ref-kass2021">Kass et al. 2021</a>)</span>. We reuse
+the four presence and background fold assignments
+(<code>block_folds</code>) created in the predictor-screening section.
+These were calculated using the records remaining in
+<code>training_set</code> after environmental values were extracted, so
+their ordering matches the model inputs. There is no need to generate a
+second set of folds.</p>
+<p>For illustration, we compare three feature-class settings (linear,
+<code>L</code>; quadratic, <code>Q</code>; and linear plus quadratic,
+<code>LQ</code>) and three regularisation multipliers (0.5, 1, and 2).
+The regularisation multiplier controls the strength of model
+penalisation; thus, nine candidate settings are evaluated.</p>
+<p><strong>Important:</strong> The predictor set used below is the one
+returned by <code><a href="../reference/screen_egv_variance.html">screen_egv_variance()</a></code> in the preceding section.
+It is held constant across the candidate model settings for this
+introductory example.</p>
 <div class="sourceCode" id="cb33"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">presences</span><span class="op">=</span><span class="fu"><a href="https://rdrr.io/r/base/cbind.html" class="external-link">cbind</a></span><span class="op">(</span><span class="va">training_set</span><span class="op">@</span><span class="va">coords</span><span class="op">[</span><span class="va">training_set</span><span class="op">@</span><span class="va">pa</span> <span class="op">==</span> <span class="fl">1</span>, <span class="op">]</span>,</span>
-<span>                 <span class="va">training_set</span><span class="op">@</span><span class="va">data</span><span class="op">[</span><span class="va">training_set</span><span class="op">@</span><span class="va">pa</span> <span class="op">==</span> <span class="fl">1</span>, <span class="op">]</span><span class="op">)</span></span>
-<span><span class="va">background</span><span class="op">=</span><span class="fu"><a href="https://rdrr.io/r/base/cbind.html" class="external-link">cbind</a></span><span class="op">(</span><span class="va">training_set</span><span class="op">@</span><span class="va">coords</span><span class="op">[</span><span class="va">training_set</span><span class="op">@</span><span class="va">pa</span> <span class="op">==</span> <span class="fl">0</span>, <span class="op">]</span>,</span>
-<span>           <span class="va">training_set</span><span class="op">@</span><span class="va">data</span><span class="op">[</span><span class="va">training_set</span><span class="op">@</span><span class="va">pa</span> <span class="op">==</span> <span class="fl">0</span>, <span class="op">]</span><span class="op">)</span></span>
-<span><span class="va">pirmais</span> <span class="op">&lt;-</span> <span class="fu">ENMeval</span><span class="fu">::</span><span class="fu"><a href="https://jamiemkass.github.io/ENMeval/reference/ENMevaluate.html" class="external-link">ENMevaluate</a></span><span class="op">(</span>occs <span class="op">=</span> <span class="va">presences</span>, </span>
-<span>                       bg <span class="op">=</span> <span class="va">background</span>,</span>
-<span>                       algorithm <span class="op">=</span> <span class="st">'maxnet'</span>, </span>
-<span>                       partitions <span class="op">=</span> <span class="st">'user'</span>, </span>
-<span>                       user.grp<span class="op">=</span><span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>occs.grp<span class="op">=</span><span class="va">block_folds</span><span class="op">$</span><span class="va">occs.grp</span>,</span>
-<span>                                     bg.grp<span class="op">=</span><span class="va">block_folds</span><span class="op">$</span><span class="va">bg.grp</span><span class="op">)</span>,</span>
-<span>                       tune.args <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>fc <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">'L'</span>,<span class="st">'Q'</span>,<span class="st">'LQ'</span><span class="op">)</span>, </span>
-<span>                                        rm <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0.5</span>,<span class="fl">1</span>,<span class="fl">2</span><span class="op">)</span><span class="op">)</span>,</span>
-<span>                       other.settings<span class="op">=</span><span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>validation.bg<span class="op">=</span><span class="st">'partition'</span><span class="op">)</span>,</span>
-<span>                       user.eval <span class="op">=</span> <span class="va">tss_user_eval</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Package ecospat is not installed, so Continuous Boyce Index (CBI) cannot be calculated.</span></span>
-<span><span class="co">#&gt; *** Running initial checks... ***</span></span>
-<span><span class="co">#&gt; * Please make sure that the user-specified partitions are spatial, else validation.bg should be set to "full". The "partition" option only makes sense when partitions represent different regions of the study extent. See ?ENMevaluate for details.</span></span>
-<span><span class="co">#&gt; * Variable values were input along with coordinates and not as raster data, so no raster predictions can be generated and AICc is calculated with background data for Maxent models.</span></span>
-<span><span class="co">#&gt; * Model evaluations with user-defined 4-fold cross validation...</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; *** Running ENMeval v2.0.6 with maxnet from maxnet package v0.1.4 ***</span></span>
-<span><span class="co">#&gt;   |                                                                              |                                                                      |   0%  |                                                                              |========                                                              |  11%  |                                                                              |================                                                      |  22%  |                                                                              |=======================                                               |  33%  |                                                                              |===============================                                       |  44%  |                                                                              |=======================================                               |  56%  |                                                                              |===============================================                       |  67%  |                                                                              |======================================================                |  78%  |                                                                              |==============================================================        |  89%  |                                                                              |======================================================================| 100%</span></span>
-<span><span class="co">#&gt; ENMevaluate completed in 0 minutes 10.1 seconds.</span></span></code></pre></div>
-<p>The argument <code>user.eval = tss_user_eval</code> adds TSS as a
-custom evaluation metric. For every cross-validation fold,
-<code>ENMeval</code> supplies predictions for training occurrences,
-validation occurrences, training background records and validation
-background records to <code><a href="../reference/tss_user_eval.html">tss_user_eval()</a></code>, which then applies
-<code><a href="../reference/max_tss.html">max_tss()</a></code> to these validation predictions and returns the
-maximum TSS and its associated classification threshold.</p>
-<p>When</p>
+<code class="sourceCode R"><span><span class="va">selected_vars</span> <span class="op">&lt;-</span> <span class="va">variance_screen</span><span class="op">$</span><span class="va">keep</span></span>
+<span></span>
+<span><span class="kw">if</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/length.html" class="external-link">length</a></span><span class="op">(</span><span class="va">selected_vars</span><span class="op">)</span> <span class="op">==</span> <span class="fl">0L</span><span class="op">)</span> <span class="op">{</span></span>
+<span>  <span class="kw"><a href="https://rdrr.io/r/base/stop.html" class="external-link">stop</a></span><span class="op">(</span><span class="st">"No predictors passed variance screening."</span><span class="op">)</span></span>
+<span><span class="op">}</span></span>
+<span></span>
+<span><span class="va">pres_idx</span> <span class="op">&lt;-</span> <span class="va">training_set</span><span class="op">@</span><span class="va">pa</span> <span class="op">==</span> <span class="fl">1</span></span>
+<span><span class="va">bg_idx</span> <span class="op">&lt;-</span> <span class="va">training_set</span><span class="op">@</span><span class="va">pa</span> <span class="op">==</span> <span class="fl">0</span></span>
+<span></span>
+<span><span class="co"># The as_lonlat() helper and block_folds were defined in the preceding section.</span></span>
+<span><span class="co"># ENMeval receives coordinates in the first two columns, followed by predictors.</span></span>
+<span><span class="va">presences</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/cbind.html" class="external-link">cbind</a></span><span class="op">(</span></span>
+<span>  <span class="fu">as_lonlat</span><span class="op">(</span><span class="va">training_set</span><span class="op">@</span><span class="va">coords</span><span class="op">[</span><span class="va">pres_idx</span>, , drop <span class="op">=</span> <span class="cn">FALSE</span><span class="op">]</span><span class="op">)</span>,</span>
+<span>  <span class="va">training_set</span><span class="op">@</span><span class="va">data</span><span class="op">[</span><span class="va">pres_idx</span>, <span class="va">selected_vars</span>, drop <span class="op">=</span> <span class="cn">FALSE</span><span class="op">]</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">background</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/cbind.html" class="external-link">cbind</a></span><span class="op">(</span></span>
+<span>  <span class="fu">as_lonlat</span><span class="op">(</span><span class="va">training_set</span><span class="op">@</span><span class="va">coords</span><span class="op">[</span><span class="va">bg_idx</span>, , drop <span class="op">=</span> <span class="cn">FALSE</span><span class="op">]</span><span class="op">)</span>,</span>
+<span>  <span class="va">training_set</span><span class="op">@</span><span class="va">data</span><span class="op">[</span><span class="va">bg_idx</span>, <span class="va">selected_vars</span>, drop <span class="op">=</span> <span class="cn">FALSE</span><span class="op">]</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/stopifnot.html" class="external-link">stopifnot</a></span><span class="op">(</span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/base/length.html" class="external-link">length</a></span><span class="op">(</span><span class="va">block_folds</span><span class="op">$</span><span class="va">occs.grp</span><span class="op">)</span> <span class="op">==</span> <span class="fu"><a href="https://rspatial.github.io/terra/reference/dimensions.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">presences</span><span class="op">)</span>,</span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/base/length.html" class="external-link">length</a></span><span class="op">(</span><span class="va">block_folds</span><span class="op">$</span><span class="va">bg.grp</span><span class="op">)</span> <span class="op">==</span> <span class="fu"><a href="https://rspatial.github.io/terra/reference/dimensions.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">background</span><span class="op">)</span></span>
+<span><span class="op">)</span></span></code></pre></div>
+<p>Following the conventional Maxent approach, occurrence locations are
+additionally included among the background samples used for model
+fitting by setting <code>addsamplestobackground = TRUE</code>. This
+behavior is the default in both <code>maxnet</code> and ENMeval’s Maxnet
+implementation. During spatial cross-validation, only the training data
+for each partition should contribute to model fitting, while validation
+presences and backgrounds remain withheld for evaluation. The option
+<code>validation.bg = "partition"</code> additionally restricts
+validation comparisons to the background records assigned to the
+corresponding validation partition.</p>
 <div class="sourceCode" id="cb34"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span></span>
-<span><span class="va">other.settings</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>validation.bg <span class="op">=</span> <span class="st">"partition"</span><span class="op">)</span></span></code></pre></div>
-<p>is used, validation occurrences are compared only with background
-records from the corresponding validation partition. This means that
-both presences and background records are spatially withheld during
-evaluation. If <code>validation.bg = "full"</code> is used instead,
-validation occurrences are compared with the combined training and
-validation background predictions.</p>
-<p>For presence-background models, background locations are not
-confirmed absences. Consequently, the reported specificity is the
-proportion of background predictions falling below the selected
-threshold rather than specificity calculated from known true absences.
-The resulting TSS should therefore be interpreted as a measure of
-discrimination between presences and background rather than conventional
-classification accuracy.</p>
-<p><code><a href="../reference/tss_user_eval.html">tss_user_eval()</a></code> selects the threshold maximizing TSS
-separately for the training and validation predictions. Consequently,
-both <code>tss.train</code> and <code>tss.val</code> are optimized on
-the same data on which they are evaluated. In particular,
-<code>tss.val</code> should therefore be regarded as a cross-validation
-metric for comparing candidate models rather than as a fully independent
-estimate of threshold-based predictive performance.</p>
-<p>The model-level results returned by <code>ENMeval</code> summarize
-the fold-level statistics and can be inspected with:</p>
+<code class="sourceCode R"><span><span class="va">enmeval_result</span> <span class="op">&lt;-</span> <span class="fu">ENMeval</span><span class="fu">::</span><span class="fu"><a href="https://jamiemkass.github.io/ENMeval/reference/ENMevaluate.html" class="external-link">ENMevaluate</a></span><span class="op">(</span></span>
+<span>  occs <span class="op">=</span> <span class="va">presences</span>,</span>
+<span>  bg <span class="op">=</span> <span class="va">background</span>,</span>
+<span>  algorithm <span class="op">=</span> <span class="st">"maxnet"</span>,</span>
+<span>  partitions <span class="op">=</span> <span class="st">"user"</span>,</span>
+<span>  user.grp <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
+<span>    occs.grp <span class="op">=</span> <span class="va">block_folds</span><span class="op">$</span><span class="va">occs.grp</span>,</span>
+<span>    bg.grp <span class="op">=</span> <span class="va">block_folds</span><span class="op">$</span><span class="va">bg.grp</span></span>
+<span>  <span class="op">)</span>,</span>
+<span>  tune.args <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
+<span>    fc <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"L"</span>, <span class="st">"Q"</span>, <span class="st">"LQ"</span><span class="op">)</span>,</span>
+<span>    rm <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0.5</span>, <span class="fl">1</span>, <span class="fl">2</span><span class="op">)</span></span>
+<span>  <span class="op">)</span>,</span>
+<span>  other.settings <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
+<span>    validation.bg <span class="op">=</span> <span class="st">"partition"</span>,</span>
+<span>    addsamplestobackground <span class="op">=</span> <span class="cn">TRUE</span></span>
+<span>  <span class="op">)</span>,</span>
+<span>  user.eval <span class="op">=</span> <span class="va">tss_user_eval</span></span>
+<span><span class="op">)</span></span>
+<span><span class="co">#&gt;   |                                                                              |                                                                      |   0%  |                                                                              |========                                                              |  11%  |                                                                              |================                                                      |  22%  |                                                                              |=======================                                               |  33%  |                                                                              |===============================                                       |  44%  |                                                                              |=======================================                               |  56%  |                                                                              |===============================================                       |  67%  |                                                                              |======================================================                |  78%  |                                                                              |==============================================================        |  89%  |                                                                              |======================================================================| 100%</span></span></code></pre></div>
+<p>The <code>user.eval = tss_user_eval</code> argument adds the
+package’s custom TSS calculations. For each candidate model and
+cross-validation fold, <code>ENMeval</code> supplies predictions for
+training and validation occurrences and background records.
+<code><a href="../reference/tss_user_eval.html">tss_user_eval()</a></code> applies <code><a href="../reference/max_tss.html">max_tss()</a></code> separately
+to the training and validation predictions. Its fold-level output
+includes maximum validation TSS (<code>tss.val</code>), the
+corresponding validation threshold (<code>thr.val</code>), sensitivity
+(<code>sens.val</code>), background-based specificity
+(<code>spec.val</code>), and maximum training TSS
+(<code>tss.train</code>).</p>
+<p>In presence-background models, background locations are not confirmed
+absences. Consequently, <code>spec.val</code> is the proportion of
+background predictions below the selected threshold, not specificity
+estimated using verified absences.</p>
+<p><strong>Interpretation of threshold optimisation.</strong> Since
+<code>thr.val</code> is selected to maximise TSS on the same validation
+observations used to calculate <code>tss.val</code>, validation TSS is
+optimised for that fold. The spatial validation records were withheld
+from <em>model fitting</em>, but not from <em>threshold selection</em>.
+Accordingly, these TSS values can help compare candidate settings, but
+should not be presented as fully independent estimates of the
+performance of a preselected classification threshold. For a final
+independent threshold-based assessment, select the threshold without
+reference to the independent test outcomes and apply it unchanged to
+that test set, as described in the preceding evaluation section.</p>
+<p>The model-level results aggregate values across folds. A compact
+table is more useful in an introductory vignette than printing every
+available statistic:</p>
 <div class="sourceCode" id="cb35"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu">ENMeval</span><span class="fu">::</span><span class="fu"><a href="https://jamiemkass.github.io/ENMeval/reference/eval.results.html" class="external-link">eval.results</a></span><span class="op">(</span><span class="va">pirmais</span><span class="op">)</span></span>
-<span><span class="co">#&gt;   fc  rm    tune.args auc.train cbi.train auc.diff.avg auc.diff.sd auc.val.avg</span></span>
-<span><span class="co">#&gt; 1  L 0.5  fc.L_rm.0.5 0.8714644        NA   0.07945571 0.022225179   0.8265177</span></span>
-<span><span class="co">#&gt; 2  Q 0.5  fc.Q_rm.0.5 0.8733380        NA   0.07111201 0.049360782   0.8213454</span></span>
-<span><span class="co">#&gt; 3 LQ 0.5 fc.LQ_rm.0.5 0.8911901        NA   0.06291696 0.033143431   0.8538288</span></span>
-<span><span class="co">#&gt; 4  L 1.0    fc.L_rm.1 0.8714923        NA   0.07545736 0.013420158   0.8314957</span></span>
-<span><span class="co">#&gt; 5  Q 1.0    fc.Q_rm.1 0.8733705        NA   0.07406087 0.043186846   0.8354066</span></span>
-<span><span class="co">#&gt; 6 LQ 1.0   fc.LQ_rm.1 0.8910181        NA   0.06465631 0.027427750   0.8523159</span></span>
-<span><span class="co">#&gt; 7  L 2.0    fc.L_rm.2 0.8714086        NA   0.06784453 0.002873099   0.8394832</span></span>
-<span><span class="co">#&gt; 8  Q 2.0    fc.Q_rm.2 0.8728591        NA   0.07260982 0.043543630   0.8340900</span></span>
-<span><span class="co">#&gt; 9 LQ 2.0   fc.LQ_rm.2 0.8893073        NA   0.06888881 0.019434704   0.8475060</span></span>
-<span><span class="co">#&gt;   auc.val.sd cbi.val.avg cbi.val.sd or.10p.avg  or.10p.sd or.mtp.avg  or.mtp.sd</span></span>
-<span><span class="co">#&gt; 1 0.06515442          NA         NA  0.1725146 0.20266343 0.02631579 0.03038686</span></span>
-<span><span class="co">#&gt; 2 0.06393752          NA         NA  0.1600877 0.08605885 0.02631579 0.03038686</span></span>
-<span><span class="co">#&gt; 3 0.05354472          NA         NA  0.1849415 0.22886072 0.02631579 0.03038686</span></span>
-<span><span class="co">#&gt; 4 0.06116684          NA         NA  0.1593567 0.17662852 0.02631579 0.03038686</span></span>
-<span><span class="co">#&gt; 5 0.07081886          NA         NA  0.1337719 0.05425139 0.01315789 0.02631579</span></span>
-<span><span class="co">#&gt; 6 0.05359382          NA         NA  0.1586257 0.21004351 0.02631579 0.03038686</span></span>
-<span><span class="co">#&gt; 7 0.05489059          NA         NA  0.1461988 0.15069121 0.01315789 0.02631579</span></span>
-<span><span class="co">#&gt; 8 0.06719898          NA         NA  0.1337719 0.05425139 0.01315789 0.02631579</span></span>
-<span><span class="co">#&gt; 9 0.05747581          NA         NA  0.1593567 0.17662852 0.01315789 0.02631579</span></span>
-<span><span class="co">#&gt;   sens.val.avg sens.val.sd spec.val.avg spec.val.sd thr.val.avg thr.val.sd</span></span>
-<span><span class="co">#&gt; 1    0.7733918  0.10818713    0.8029094  0.12455619   0.4409865  0.2682956</span></span>
-<span><span class="co">#&gt; 2    0.8004386  0.11579280    0.8009088  0.09314715   0.3590680  0.2133038</span></span>
-<span><span class="co">#&gt; 3    0.8684211  0.15789474    0.7350150  0.09750529   0.3324927  0.2717441</span></span>
-<span><span class="co">#&gt; 4    0.7602339  0.10877822    0.8212688  0.10944054   0.4560333  0.2567586</span></span>
-<span><span class="co">#&gt; 5    0.8128655  0.15272006    0.8048555  0.11914765   0.3993499  0.2140476</span></span>
-<span><span class="co">#&gt; 6    0.8552632  0.14493607    0.7459984  0.08987392   0.3498289  0.2762962</span></span>
-<span><span class="co">#&gt; 7    0.7602339  0.10877822    0.8268857  0.10782651   0.4674289  0.2529230</span></span>
-<span><span class="co">#&gt; 8    0.8654971  0.09465739    0.7537042  0.13609890   0.3247499  0.1256810</span></span>
-<span><span class="co">#&gt; 9    0.8135965  0.10894511    0.7878394  0.12253615   0.4021141  0.2485099</span></span>
-<span><span class="co">#&gt;   tss.train.avg tss.train.sd tss.val.avg tss.val.sd     AICc delta.AICc</span></span>
-<span><span class="co">#&gt; 1     0.6023010   0.03060439   0.5763013 0.09630676 941.0513  12.115677</span></span>
-<span><span class="co">#&gt; 2     0.6331861   0.03023382   0.6013474 0.11202094 963.8214  34.885785</span></span>
-<span><span class="co">#&gt; 3     0.6740021   0.05803389   0.6034361 0.10076023 933.0259   4.090330</span></span>
-<span><span class="co">#&gt; 4     0.6010455   0.03197616   0.5815027 0.09067639 941.0898  12.154199</span></span>
-<span><span class="co">#&gt; 5     0.6315777   0.02755788   0.6177210 0.12669991 963.9343  34.998677</span></span>
-<span><span class="co">#&gt; 6     0.6696376   0.05634489   0.6012615 0.09244315 934.1113   5.175668</span></span>
-<span><span class="co">#&gt; 7     0.5999035   0.02966228   0.5871197 0.08706305 941.2359  12.300267</span></span>
-<span><span class="co">#&gt; 8     0.6262000   0.03072282   0.6192012 0.13265557 964.3478  35.412167</span></span>
-<span><span class="co">#&gt; 9     0.6498189   0.05407192   0.6014359 0.09896934 928.9356   0.000000</span></span>
-<span><span class="co">#&gt;          w.AIC ncoef</span></span>
-<span><span class="co">#&gt; 1 1.931342e-03     5</span></span>
-<span><span class="co">#&gt; 2 2.194791e-08     5</span></span>
-<span><span class="co">#&gt; 3 1.067926e-01    10</span></span>
-<span><span class="co">#&gt; 4 1.894499e-03     5</span></span>
-<span><span class="co">#&gt; 5 2.074335e-08     5</span></span>
-<span><span class="co">#&gt; 6 6.206731e-02    10</span></span>
-<span><span class="co">#&gt; 7 1.761068e-03     5</span></span>
-<span><span class="co">#&gt; 8 1.686905e-08     5</span></span>
-<span><span class="co">#&gt; 9 8.255531e-01     7</span></span></code></pre></div>
-<p>Fold-specific results can be examined with:</p>
+<code class="sourceCode R"><span><span class="va">cv_results</span> <span class="op">&lt;-</span> <span class="fu">ENMeval</span><span class="fu">::</span><span class="fu"><a href="https://jamiemkass.github.io/ENMeval/reference/eval.results.html" class="external-link">eval.results</a></span><span class="op">(</span><span class="va">enmeval_result</span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span></span>
+<span>  <span class="va">cv_results</span><span class="op">[</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span></span>
+<span>    <span class="st">"fc"</span>, <span class="st">"rm"</span>, <span class="st">"auc.val.avg"</span>,</span>
+<span>    <span class="st">"tss.val.avg"</span>, <span class="st">"tss.val.sd"</span>,</span>
+<span>    <span class="st">"AICc"</span>, <span class="st">"delta.AICc"</span></span>
+<span>  <span class="op">)</span><span class="op">]</span>,</span>
+<span>  digits <span class="op">=</span> <span class="fl">3</span></span>
+<span><span class="op">)</span></span></code></pre></div>
+<table class="table">
+<thead><tr class="header">
+<th align="left">fc</th>
+<th align="right">rm</th>
+<th align="right">auc.val.avg</th>
+<th align="right">tss.val.avg</th>
+<th align="right">tss.val.sd</th>
+<th align="right">AICc</th>
+<th align="right">delta.AICc</th>
+</tr></thead>
+<tbody>
+<tr class="odd">
+<td align="left">L</td>
+<td align="right">0.5</td>
+<td align="right">0.825</td>
+<td align="right">0.579</td>
+<td align="right">0.098</td>
+<td align="right">938.411</td>
+<td align="right">12.058</td>
+</tr>
+<tr class="even">
+<td align="left">Q</td>
+<td align="right">0.5</td>
+<td align="right">0.822</td>
+<td align="right">0.603</td>
+<td align="right">0.115</td>
+<td align="right">962.050</td>
+<td align="right">35.697</td>
+</tr>
+<tr class="odd">
+<td align="left">LQ</td>
+<td align="right">0.5</td>
+<td align="right">0.853</td>
+<td align="right">0.614</td>
+<td align="right">0.107</td>
+<td align="right">930.219</td>
+<td align="right">3.866</td>
+</tr>
+<tr class="even">
+<td align="left">L</td>
+<td align="right">1.0</td>
+<td align="right">0.829</td>
+<td align="right">0.581</td>
+<td align="right">0.092</td>
+<td align="right">938.451</td>
+<td align="right">12.097</td>
+</tr>
+<tr class="odd">
+<td align="left">Q</td>
+<td align="right">1.0</td>
+<td align="right">0.838</td>
+<td align="right">0.614</td>
+<td align="right">0.127</td>
+<td align="right">962.161</td>
+<td align="right">35.808</td>
+</tr>
+<tr class="even">
+<td align="left">LQ</td>
+<td align="right">1.0</td>
+<td align="right">0.851</td>
+<td align="right">0.603</td>
+<td align="right">0.102</td>
+<td align="right">931.310</td>
+<td align="right">4.956</td>
+</tr>
+<tr class="odd">
+<td align="left">L</td>
+<td align="right">2.0</td>
+<td align="right">0.835</td>
+<td align="right">0.589</td>
+<td align="right">0.085</td>
+<td align="right">938.598</td>
+<td align="right">12.245</td>
+</tr>
+<tr class="even">
+<td align="left">Q</td>
+<td align="right">2.0</td>
+<td align="right">0.837</td>
+<td align="right">0.612</td>
+<td align="right">0.132</td>
+<td align="right">962.567</td>
+<td align="right">36.214</td>
+</tr>
+<tr class="odd">
+<td align="left">LQ</td>
+<td align="right">2.0</td>
+<td align="right">0.846</td>
+<td align="right">0.595</td>
+<td align="right">0.100</td>
+<td align="right">926.353</td>
+<td align="right">0.000</td>
+</tr>
+</tbody>
+</table>
+<p>Here, the Continuous Boyce Index (<code>CBI</code>) is available only
+when the optional <code>ecospat</code> dependency is installed.
+Moreover, because the example passes extracted environmental values
+rather than a full environmental raster to <code><a href="https://jamiemkass.github.io/ENMeval/reference/ENMevaluate.html" class="external-link">ENMevaluate()</a></code>,
+its AICc calculation uses the supplied background predictions as an
+approximation to the environmental domain. Both points matter when
+interpreting or comparing these statistics.</p>
+<p>Fold-specific statistics can also be inspected; the <code>fold</code>
+column identifies the validation partition:</p>
 <div class="sourceCode" id="cb36"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span></span>
-<span><span class="fu">ENMeval</span><span class="fu">::</span><span class="fu"><a href="https://jamiemkass.github.io/ENMeval/reference/eval.results.partitions.html" class="external-link">eval.results.partitions</a></span><span class="op">(</span><span class="va">pirmais</span><span class="op">)</span></span>
-<span><span class="co">#&gt;       tune.args fold   auc.val   auc.diff cbi.val     or.mtp     or.10p</span></span>
-<span><span class="co">#&gt; 1   fc.L_rm.0.5    1 0.8137455 0.06758341      NA 0.05263158 0.05263158</span></span>
-<span><span class="co">#&gt; 2   fc.L_rm.0.5    2 0.7601151 0.11275353      NA 0.05263158 0.47368421</span></span>
-<span><span class="co">#&gt; 3   fc.L_rm.0.5    3 0.8159626 0.06759129      NA 0.00000000 0.05263158</span></span>
-<span><span class="co">#&gt; 4   fc.L_rm.0.5    4 0.9162476 0.06989459      NA 0.00000000 0.11111111</span></span>
-<span><span class="co">#&gt; 5   fc.Q_rm.0.5    1 0.7478283 0.13250706      NA 0.05263158 0.05263158</span></span>
-<span><span class="co">#&gt; 6   fc.Q_rm.0.5    2 0.8356908 0.01907880      NA 0.05263158 0.26315789</span></span>
-<span><span class="co">#&gt; 7   fc.Q_rm.0.5    3 0.8014197 0.08629100      NA 0.00000000 0.15789474</span></span>
-<span><span class="co">#&gt; 8   fc.Q_rm.0.5    4 0.9004430 0.04657120      NA 0.00000000 0.16666667</span></span>
-<span><span class="co">#&gt; 9  fc.LQ_rm.0.5    1 0.7976495 0.11064213      NA 0.05263158 0.10526316</span></span>
-<span><span class="co">#&gt; 10 fc.LQ_rm.0.5    2 0.8462993 0.03540573      NA 0.05263158 0.52631579</span></span>
-<span><span class="co">#&gt; 11 fc.LQ_rm.0.5    3 0.8447022 0.05812976      NA 0.00000000 0.05263158</span></span>
-<span><span class="co">#&gt; 12 fc.LQ_rm.0.5    4 0.9266643 0.04749023      NA 0.00000000 0.05555556</span></span>
-<span><span class="co">#&gt; 13    fc.L_rm.1    1 0.8127236 0.06845567      NA 0.05263158 0.05263158</span></span>
-<span><span class="co">#&gt; 14    fc.L_rm.1    2 0.7780428 0.09555171      NA 0.05263158 0.42105263</span></span>
-<span><span class="co">#&gt; 15    fc.L_rm.1    3 0.8156163 0.06796583      NA 0.00000000 0.05263158</span></span>
-<span><span class="co">#&gt; 16    fc.L_rm.1    4 0.9196001 0.06985625      NA 0.00000000 0.11111111</span></span>
-<span><span class="co">#&gt; 17    fc.Q_rm.1    1 0.7514052 0.12973318      NA 0.05263158 0.05263158</span></span>
-<span><span class="co">#&gt; 18    fc.Q_rm.1    2 0.8881579 0.03416020      NA 0.00000000 0.15789474</span></span>
-<span><span class="co">#&gt; 19    fc.Q_rm.1    3 0.8024584 0.08591674      NA 0.00000000 0.15789474</span></span>
-<span><span class="co">#&gt; 20    fc.Q_rm.1    4 0.8996049 0.04643335      NA 0.00000000 0.16666667</span></span>
-<span><span class="co">#&gt; 21   fc.LQ_rm.1    1 0.8019928 0.10503296      NA 0.05263158 0.05263158</span></span>
-<span><span class="co">#&gt; 22   fc.LQ_rm.1    2 0.8352796 0.04556141      NA 0.05263158 0.47368421</span></span>
-<span><span class="co">#&gt; 23   fc.LQ_rm.1    3 0.8440097 0.05822846      NA 0.00000000 0.05263158</span></span>
-<span><span class="co">#&gt; 24   fc.LQ_rm.1    4 0.9279813 0.04980242      NA 0.00000000 0.05555556</span></span>
-<span><span class="co">#&gt; 25    fc.L_rm.2    1 0.8111906 0.06934893      NA 0.05263158 0.05263158</span></span>
-<span><span class="co">#&gt; 26    fc.L_rm.2    2 0.8059211 0.06752365      NA 0.00000000 0.36842105</span></span>
-<span><span class="co">#&gt; 27    fc.L_rm.2    3 0.8194252 0.06395902      NA 0.00000000 0.05263158</span></span>
-<span><span class="co">#&gt; 28    fc.L_rm.2    4 0.9213961 0.07054652      NA 0.00000000 0.11111111</span></span>
-<span><span class="co">#&gt; 29    fc.Q_rm.2    1 0.7554931 0.12778216      NA 0.05263158 0.05263158</span></span>
-<span><span class="co">#&gt; 30    fc.Q_rm.2    2 0.8822368 0.03033592      NA 0.00000000 0.15789474</span></span>
-<span><span class="co">#&gt; 31    fc.Q_rm.2    3 0.8014197 0.08583149      NA 0.00000000 0.15789474</span></span>
-<span><span class="co">#&gt; 32    fc.Q_rm.2    4 0.8972102 0.04648970      NA 0.00000000 0.16666667</span></span>
-<span><span class="co">#&gt; 33   fc.LQ_rm.2    1 0.8050588 0.09781580      NA 0.05263158 0.05263158</span></span>
-<span><span class="co">#&gt; 34   fc.LQ_rm.2    2 0.8162007 0.05982469      NA 0.00000000 0.42105263</span></span>
-<span><span class="co">#&gt; 35   fc.LQ_rm.2    3 0.8374307 0.06186656      NA 0.00000000 0.05263158</span></span>
-<span><span class="co">#&gt; 36   fc.LQ_rm.2    4 0.9313338 0.05604817      NA 0.00000000 0.11111111</span></span>
-<span><span class="co">#&gt;      tss.val    thr.val  sens.val  spec.val tss.train</span></span>
-<span><span class="co">#&gt; 1  0.5840572 0.41914114 0.8947368 0.6893204 0.6287021</span></span>
-<span><span class="co">#&gt; 2  0.4925987 0.08071654 0.7894737 0.7031250 0.6052765</span></span>
-<span><span class="co">#&gt; 3  0.5197368 0.71163642 0.6315789 0.8881579 0.6165309</span></span>
-<span><span class="co">#&gt; 4  0.7088123 0.55245194 0.7777778 0.9310345 0.5586945</span></span>
-<span><span class="co">#&gt; 5  0.5314257 0.29024885 0.8421053 0.6893204 0.6287021</span></span>
-<span><span class="co">#&gt; 6  0.6572368 0.16345037 0.8947368 0.7625000 0.6134793</span></span>
-<span><span class="co">#&gt; 7  0.4868421 0.66235635 0.6315789 0.8552632 0.6772283</span></span>
-<span><span class="co">#&gt; 8  0.7298851 0.32021649 0.8333333 0.8965517 0.6133348</span></span>
-<span><span class="co">#&gt; 9  0.5467552 0.42438041 0.7894737 0.7572816 0.7344294</span></span>
-<span><span class="co">#&gt; 10 0.6015625 0.04355653 1.0000000 0.6015625 0.6044470</span></span>
-<span><span class="co">#&gt; 11 0.5197368 0.66574347 0.6842105 0.8355263 0.7066084</span></span>
-<span><span class="co">#&gt; 12 0.7456897 0.19629035 1.0000000 0.7456897 0.6505234</span></span>
-<span><span class="co">#&gt; 13 0.5840572 0.42673961 0.8947368 0.6893204 0.6271777</span></span>
-<span><span class="co">#&gt; 14 0.5134046 0.11472587 0.7368421 0.7765625 0.6091475</span></span>
-<span><span class="co">#&gt; 15 0.5197368 0.71799392 0.6315789 0.8881579 0.6133639</span></span>
-<span><span class="co">#&gt; 16 0.7088123 0.56467369 0.7777778 0.9310345 0.5544928</span></span>
-<span><span class="co">#&gt; 17 0.5314257 0.30181062 0.8421053 0.6893204 0.6325131</span></span>
-<span><span class="co">#&gt; 18 0.7265625 0.16274972 1.0000000 0.7265625 0.6145622</span></span>
-<span><span class="co">#&gt; 19 0.4868421 0.65622779 0.6315789 0.8552632 0.6701024</span></span>
-<span><span class="co">#&gt; 20 0.7260536 0.47661128 0.7777778 0.9482759 0.6091331</span></span>
-<span><span class="co">#&gt; 21 0.5564640 0.47405611 0.7894737 0.7669903 0.7290941</span></span>
-<span><span class="co">#&gt; 22 0.5786184 0.05872007 0.9473684 0.6312500 0.6057373</span></span>
-<span><span class="co">#&gt; 23 0.5328947 0.67297505 0.6842105 0.8486842 0.7026496</span></span>
-<span><span class="co">#&gt; 24 0.7370690 0.19356447 1.0000000 0.7370690 0.6410696</span></span>
-<span><span class="co">#&gt; 25 0.5840572 0.44114963 0.8947368 0.6893204 0.6271777</span></span>
-<span><span class="co">#&gt; 26 0.5337171 0.12927956 0.7368421 0.7968750 0.6052765</span></span>
-<span><span class="co">#&gt; 27 0.5197368 0.72199795 0.6315789 0.8881579 0.6094050</span></span>
-<span><span class="co">#&gt; 28 0.7109674 0.57728862 0.7777778 0.9331897 0.5577547</span></span>
-<span><span class="co">#&gt; 29 0.5314257 0.32573151 0.8421053 0.6893204 0.6366507</span></span>
-<span><span class="co">#&gt; 30 0.7390625 0.17582657 1.0000000 0.7390625 0.6171429</span></span>
-<span><span class="co">#&gt; 31 0.4802632 0.31426790 0.8421053 0.6381579 0.6618312</span></span>
-<span><span class="co">#&gt; 32 0.7260536 0.48317380 0.7777778 0.9482759 0.5891751</span></span>
-<span><span class="co">#&gt; 33 0.5784364 0.31729632 0.9473684 0.6310680 0.7074260</span></span>
-<span><span class="co">#&gt; 34 0.5472862 0.11042584 0.7894737 0.7578125 0.6029032</span></span>
-<span><span class="co">#&gt; 35 0.5328947 0.69552666 0.6842105 0.8486842 0.6844390</span></span>
-<span><span class="co">#&gt; 36 0.7471264 0.48520773 0.8333333 0.9137931 0.6045076</span></span></code></pre></div>
-<p>Cross-validation TSS and independent-test TSS serve different
-purposes in this workflow. Cross-validation is used to compare candidate
-feature classes, regularization multipliers or other model settings
-using only the training data. Once the preferred settings have been
-selected and the final model has been fitted, the completely withheld
-independent testing set can be used for a separate assessment of
-predictive performance.</p>
-<p>For a strictly independent threshold-based assessment, the
-classification threshold should be selected from training or
-cross-validation data and then applied unchanged to the independent
-testing data, rather than re-optimizing the threshold on the independent
-test set.</p>
+<code class="sourceCode R"><span><span class="va">cv_folds</span> <span class="op">&lt;-</span> <span class="fu">ENMeval</span><span class="fu">::</span><span class="fu"><a href="https://jamiemkass.github.io/ENMeval/reference/eval.results.partitions.html" class="external-link">eval.results.partitions</a></span><span class="op">(</span><span class="va">enmeval_result</span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span></span>
+<span>  <span class="fu"><a href="https://rspatial.github.io/terra/reference/headtail.html" class="external-link">head</a></span><span class="op">(</span><span class="va">cv_folds</span><span class="op">[</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span></span>
+<span>    <span class="st">"tune.args"</span>, <span class="st">"fold"</span>, <span class="st">"auc.val"</span>,</span>
+<span>    <span class="st">"tss.val"</span>, <span class="st">"thr.val"</span>, <span class="st">"tss.train"</span></span>
+<span>  <span class="op">)</span><span class="op">]</span>, <span class="fl">12</span><span class="op">)</span>,</span>
+<span>  digits <span class="op">=</span> <span class="fl">3</span></span>
+<span><span class="op">)</span></span></code></pre></div>
+<table class="table">
+<thead><tr class="header">
+<th align="left">tune.args</th>
+<th align="right">fold</th>
+<th align="right">auc.val</th>
+<th align="right">tss.val</th>
+<th align="right">thr.val</th>
+<th align="right">tss.train</th>
+</tr></thead>
+<tbody>
+<tr class="odd">
+<td align="left">fc.L_rm.0.5</td>
+<td align="right">1</td>
+<td align="right">0.809</td>
+<td align="right">0.573</td>
+<td align="right">0.412</td>
+<td align="right">0.658</td>
+</tr>
+<tr class="even">
+<td align="left">fc.L_rm.0.5</td>
+<td align="right">2</td>
+<td align="right">0.754</td>
+<td align="right">0.497</td>
+<td align="right">0.082</td>
+<td align="right">0.652</td>
+</tr>
+<tr class="odd">
+<td align="left">fc.L_rm.0.5</td>
+<td align="right">3</td>
+<td align="right">0.816</td>
+<td align="right">0.527</td>
+<td align="right">0.711</td>
+<td align="right">0.643</td>
+</tr>
+<tr class="even">
+<td align="left">fc.L_rm.0.5</td>
+<td align="right">4</td>
+<td align="right">0.920</td>
+<td align="right">0.718</td>
+<td align="right">0.371</td>
+<td align="right">0.592</td>
+</tr>
+<tr class="odd">
+<td align="left">fc.Q_rm.0.5</td>
+<td align="right">1</td>
+<td align="right">0.743</td>
+<td align="right">0.521</td>
+<td align="right">0.286</td>
+<td align="right">0.666</td>
+</tr>
+<tr class="even">
+<td align="left">fc.Q_rm.0.5</td>
+<td align="right">2</td>
+<td align="right">0.828</td>
+<td align="right">0.673</td>
+<td align="right">0.164</td>
+<td align="right">0.666</td>
+</tr>
+<tr class="odd">
+<td align="left">fc.Q_rm.0.5</td>
+<td align="right">3</td>
+<td align="right">0.801</td>
+<td align="right">0.490</td>
+<td align="right">0.664</td>
+<td align="right">0.712</td>
+</tr>
+<tr class="even">
+<td align="left">fc.Q_rm.0.5</td>
+<td align="right">4</td>
+<td align="right">0.916</td>
+<td align="right">0.728</td>
+<td align="right">0.481</td>
+<td align="right">0.646</td>
+</tr>
+<tr class="odd">
+<td align="left">fc.LQ_rm.0.5</td>
+<td align="right">1</td>
+<td align="right">0.796</td>
+<td align="right">0.563</td>
+<td align="right">0.436</td>
+<td align="right">0.766</td>
+</tr>
+<tr class="even">
+<td align="left">fc.LQ_rm.0.5</td>
+<td align="right">2</td>
+<td align="right">0.845</td>
+<td align="right">0.597</td>
+<td align="right">0.039</td>
+<td align="right">0.652</td>
+</tr>
+<tr class="odd">
+<td align="left">fc.LQ_rm.0.5</td>
+<td align="right">3</td>
+<td align="right">0.839</td>
+<td align="right">0.527</td>
+<td align="right">0.668</td>
+<td align="right">0.741</td>
+</tr>
+<tr class="even">
+<td align="left">fc.LQ_rm.0.5</td>
+<td align="right">4</td>
+<td align="right">0.932</td>
+<td align="right">0.769</td>
+<td align="right">0.207</td>
+<td align="right">0.695</td>
+</tr>
+</tbody>
+</table>
+<p>Cross-validation helps choose model settings using the training
+dataset. The final model can then be fitted using the selected
+predictors and model settings and evaluated once with the withheld
+independent test set. In a fully nested evaluation of the
+<em>complete</em> modelling procedure, predictor screening and other
+data-dependent preprocessing would also be repeated within each
+cross-validation training fold rather than performed once on all
+training records.</p>
+</div>
+<div class="section level2">
+<h2 id="final-model-selection-and-independent-testing">Final model selection and independent testing<a class="anchor" aria-label="anchor" href="#final-model-selection-and-independent-testing"></a>
+</h2>
+<p>After evaluating alternative model settings using spatial
+cross-validation, the preferred model can be selected from the
+<code>ENMevaluation</code> object. ENMeval stores models fitted using
+the complete training dataset for each combination of feature classes
+and regularisation multipliers. Consequently, there is no need to fit
+the selected model again manually.</p>
+<p>The independent testing dataset remains withheld from predictor
+screening decisions, model tuning, and fitting.</p>
+<div class="section level3">
+<h3 id="selecting-the-preferred-model">Selecting the preferred model<a class="anchor" aria-label="anchor" href="#selecting-the-preferred-model"></a>
+</h3>
+<p>For this introductory example, we select the model with the lowest
+corrected Akaike Information Criterion (AICc). Other selection
+strategies may also consider cross-validation performance or a
+combination of criteria.</p>
+<div class="sourceCode" id="cb37"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">cv_results</span> <span class="op">&lt;-</span> <span class="fu">ENMeval</span><span class="fu">::</span><span class="fu"><a href="https://jamiemkass.github.io/ENMeval/reference/eval.results.html" class="external-link">eval.results</a></span><span class="op">(</span><span class="va">enmeval_result</span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">valid_models</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/which.html" class="external-link">which</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/is.finite.html" class="external-link">is.finite</a></span><span class="op">(</span><span class="va">cv_results</span><span class="op">$</span><span class="va">AICc</span><span class="op">)</span><span class="op">)</span></span>
+<span></span>
+<span><span class="kw">if</span> <span class="op">(</span><span class="op">!</span><span class="fu"><a href="https://rdrr.io/r/base/length.html" class="external-link">length</a></span><span class="op">(</span><span class="va">valid_models</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span>
+<span>  <span class="kw"><a href="https://rdrr.io/r/base/stop.html" class="external-link">stop</a></span><span class="op">(</span><span class="st">"No candidate model has a finite AICc."</span><span class="op">)</span></span>
+<span><span class="op">}</span></span>
+<span></span>
+<span><span class="va">best_idx</span> <span class="op">&lt;-</span> <span class="va">valid_models</span><span class="op">[</span></span>
+<span>  <span class="fu"><a href="https://rspatial.github.io/terra/reference/summarize-generics.html" class="external-link">which.min</a></span><span class="op">(</span><span class="va">cv_results</span><span class="op">$</span><span class="va">AICc</span><span class="op">[</span><span class="va">valid_models</span><span class="op">]</span><span class="op">)</span></span>
+<span><span class="op">]</span></span>
+<span></span>
+<span><span class="va">best_settings</span> <span class="op">&lt;-</span> <span class="va">cv_results</span><span class="op">[</span><span class="va">best_idx</span>, , drop <span class="op">=</span> <span class="cn">FALSE</span><span class="op">]</span></span>
+<span></span>
+<span><span class="va">best_settings</span><span class="op">[</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span></span>
+<span>  <span class="st">"fc"</span>, <span class="st">"rm"</span>, <span class="st">"tune.args"</span>,</span>
+<span>  <span class="st">"AICc"</span>, <span class="st">"delta.AICc"</span>,</span>
+<span>  <span class="st">"auc.val.avg"</span>, <span class="st">"tss.val.avg"</span></span>
+<span><span class="op">)</span><span class="op">]</span></span>
+<span><span class="co">#&gt;   fc rm  tune.args     AICc delta.AICc auc.val.avg tss.val.avg</span></span>
+<span><span class="co">#&gt; 9 LQ  2 fc.LQ_rm.2 926.3533          0   0.8459701   0.5950956</span></span></code></pre></div>
+</div>
+<div class="section level3">
+<h3 id="extracting-the-selected-model">Extracting the selected model<a class="anchor" aria-label="anchor" href="#extracting-the-selected-model"></a>
+</h3>
+<p>The <code>tune.args</code> column identifies each candidate model
+within the list returned by <code><a href="https://jamiemkass.github.io/ENMeval/reference/eval.models.html" class="external-link">ENMeval::eval.models()</a></code>. We use
+this identifier to extract the model fitted with the complete training
+dataset.</p>
+<div class="sourceCode" id="cb38"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">best_model_id</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/character.html" class="external-link">as.character</a></span><span class="op">(</span></span>
+<span>  <span class="va">best_settings</span><span class="op">$</span><span class="va">tune.args</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">fitted_models</span> <span class="op">&lt;-</span> <span class="fu">ENMeval</span><span class="fu">::</span><span class="fu"><a href="https://jamiemkass.github.io/ENMeval/reference/eval.models.html" class="external-link">eval.models</a></span><span class="op">(</span><span class="va">enmeval_result</span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">final_model</span> <span class="op">&lt;-</span> <span class="va">fitted_models</span><span class="op">[[</span><span class="va">best_model_id</span><span class="op">]</span><span class="op">]</span></span>
+<span></span>
+<span><span class="kw">if</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/NULL.html" class="external-link">is.null</a></span><span class="op">(</span><span class="va">final_model</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span>
+<span>  <span class="kw"><a href="https://rdrr.io/r/base/stop.html" class="external-link">stop</a></span><span class="op">(</span><span class="st">"Selected model was not found in enmeval_result."</span><span class="op">)</span></span>
+<span><span class="op">}</span></span>
+<span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/stopifnot.html" class="external-link">stopifnot</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/class.html" class="external-link">inherits</a></span><span class="op">(</span><span class="va">final_model</span>, <span class="st">"maxnet"</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
+<p>The resulting <code>final_model</code> retains the feature classes,
+regularisation multiplier, and background convention used during ENMeval
+fitting. No independent testing observations have contributed to this
+model.</p>
+</div>
+<div class="section level3">
+<h3 id="selecting-a-classification-threshold">Selecting a classification threshold<a class="anchor" aria-label="anchor" href="#selecting-a-classification-threshold"></a>
+</h3>
+<p>To evaluate threshold-based predictive performance, we first
+determine the classification threshold using training predictions
+only.</p>
+<p>Here, <code><a href="../reference/max_tss.html">max_tss()</a></code> identifies the threshold maximising TSS
+between training presences and background records. This threshold will
+subsequently be applied unchanged to the independent testing data.</p>
+<div class="sourceCode" id="cb39"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">selected_vars</span> <span class="op">&lt;-</span> <span class="va">variance_screen</span><span class="op">$</span><span class="va">keep</span></span>
+<span></span>
+<span><span class="va">train_x</span> <span class="op">&lt;-</span> <span class="va">training_set</span><span class="op">@</span><span class="va">data</span><span class="op">[</span></span>
+<span>  , <span class="va">selected_vars</span>, drop <span class="op">=</span> <span class="cn">FALSE</span></span>
+<span><span class="op">]</span></span>
+<span></span>
+<span><span class="va">train_y</span> <span class="op">&lt;-</span> <span class="va">training_set</span><span class="op">@</span><span class="va">pa</span></span>
+<span></span>
+<span><span class="va">train_predictions</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rspatial.github.io/terra/reference/predict.html" class="external-link">predict</a></span><span class="op">(</span></span>
+<span>  <span class="va">final_model</span>,</span>
+<span>  newdata <span class="op">=</span> <span class="va">train_x</span>,</span>
+<span>  type <span class="op">=</span> <span class="st">"cloglog"</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">train_tss</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/max_tss.html">max_tss</a></span><span class="op">(</span></span>
+<span>  p_pos <span class="op">=</span> <span class="va">train_predictions</span><span class="op">[</span><span class="va">train_y</span> <span class="op">==</span> <span class="fl">1</span><span class="op">]</span>,</span>
+<span>  p_neg <span class="op">=</span> <span class="va">train_predictions</span><span class="op">[</span><span class="va">train_y</span> <span class="op">==</span> <span class="fl">0</span><span class="op">]</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">threshold</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/unname.html" class="external-link">unname</a></span><span class="op">(</span><span class="va">train_tss</span><span class="op">[</span><span class="st">"threshold"</span><span class="op">]</span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">train_tss</span></span>
+<span><span class="co">#&gt;         tss   threshold sensitivity specificity </span></span>
+<span><span class="co">#&gt;   0.6778788   0.1423901   0.9733333   0.7045455</span></span></code></pre></div>
+<p>Although this threshold is optimised on the training data, it is
+selected without consulting the independent testing observations.
+Consequently, its application to the independent dataset provides an
+assessment of performance at a previously determined threshold.</p>
+</div>
+<div class="section level3">
+<h3 id="independent-testing">Independent testing<a class="anchor" aria-label="anchor" href="#independent-testing"></a>
+</h3>
+<p>The selected model is now applied to the independently withheld
+presence and background records. Only predictors used during model
+fitting are included in the prediction dataset.</p>
+<div class="sourceCode" id="cb40"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">test_x</span> <span class="op">&lt;-</span> <span class="va">testing_set</span><span class="op">@</span><span class="va">data</span><span class="op">[</span></span>
+<span>  , <span class="va">selected_vars</span>, drop <span class="op">=</span> <span class="cn">FALSE</span></span>
+<span><span class="op">]</span></span>
+<span></span>
+<span><span class="va">test_y</span> <span class="op">&lt;-</span> <span class="va">testing_set</span><span class="op">@</span><span class="va">pa</span></span>
+<span></span>
+<span><span class="co"># Apply ENMeval's clamping convention if enabled</span></span>
+<span><span class="kw">if</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/Logic.html" class="external-link">isTRUE</a></span><span class="op">(</span><span class="va">enmeval_result</span><span class="op">@</span><span class="va">doClamp</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span>
+<span>  <span class="va">test_x</span> <span class="op">&lt;-</span> <span class="fu">ENMeval</span><span class="fu">::</span><span class="fu"><a href="https://jamiemkass.github.io/ENMeval/reference/clamp.vars.html" class="external-link">clamp.vars</a></span><span class="op">(</span></span>
+<span>    orig.vals <span class="op">=</span> <span class="va">test_x</span>,</span>
+<span>    ref.vals <span class="op">=</span> <span class="va">train_x</span>,</span>
+<span>    left <span class="op">=</span> <span class="va">enmeval_result</span><span class="op">@</span><span class="va">clamp.directions</span><span class="op">$</span><span class="va">left</span>,</span>
+<span>    right <span class="op">=</span> <span class="va">enmeval_result</span><span class="op">@</span><span class="va">clamp.directions</span><span class="op">$</span><span class="va">right</span></span>
+<span>  <span class="op">)</span></span>
+<span><span class="op">}</span></span>
+<span></span>
+<span><span class="va">test_predictions</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rspatial.github.io/terra/reference/predict.html" class="external-link">predict</a></span><span class="op">(</span></span>
+<span>  <span class="va">final_model</span>,</span>
+<span>  newdata <span class="op">=</span> <span class="va">test_x</span>,</span>
+<span>  type <span class="op">=</span> <span class="st">"cloglog"</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">test_pos</span> <span class="op">&lt;-</span> <span class="va">test_predictions</span><span class="op">[</span><span class="va">test_y</span> <span class="op">==</span> <span class="fl">1</span><span class="op">]</span></span>
+<span><span class="va">test_bg</span> <span class="op">&lt;-</span> <span class="va">test_predictions</span><span class="op">[</span><span class="va">test_y</span> <span class="op">==</span> <span class="fl">0</span><span class="op">]</span></span>
+<span></span>
+<span><span class="va">test_sensitivity</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rspatial.github.io/terra/reference/summarize-generics.html" class="external-link">mean</a></span><span class="op">(</span><span class="va">test_pos</span> <span class="op">&gt;=</span> <span class="va">threshold</span><span class="op">)</span></span>
+<span><span class="va">test_specificity</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rspatial.github.io/terra/reference/summarize-generics.html" class="external-link">mean</a></span><span class="op">(</span><span class="va">test_bg</span> <span class="op">&lt;</span> <span class="va">threshold</span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">independent_tss</span> <span class="op">&lt;-</span></span>
+<span>  <span class="va">test_sensitivity</span> <span class="op">+</span> <span class="va">test_specificity</span> <span class="op">-</span> <span class="fl">1</span></span>
+<span></span>
+<span><span class="va">independent_results</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span>
+<span>  model <span class="op">=</span> <span class="va">best_model_id</span>,</span>
+<span>  n_presences <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/length.html" class="external-link">length</a></span><span class="op">(</span><span class="va">test_pos</span><span class="op">)</span>,</span>
+<span>  n_background <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/length.html" class="external-link">length</a></span><span class="op">(</span><span class="va">test_bg</span><span class="op">)</span>,</span>
+<span>  threshold <span class="op">=</span> <span class="va">threshold</span>,</span>
+<span>  sensitivity <span class="op">=</span> <span class="va">test_sensitivity</span>,</span>
+<span>  background_specificity <span class="op">=</span> <span class="va">test_specificity</span>,</span>
+<span>  TSS <span class="op">=</span> <span class="va">independent_tss</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span></span>
+<span>  <span class="va">independent_results</span>,</span>
+<span>  digits <span class="op">=</span> <span class="fl">3</span>,</span>
+<span>  caption <span class="op">=</span> <span class="st">"Independent testing results for the selected Maxnet model."</span></span>
+<span><span class="op">)</span></span></code></pre></div>
+<table class="table">
+<caption>Independent testing results for the selected Maxnet
+model.</caption>
+<colgroup>
+<col width="12%">
+<col width="13%">
+<col width="14%">
+<col width="11%">
+<col width="13%">
+<col width="26%">
+<col width="6%">
+</colgroup>
+<thead><tr class="header">
+<th align="left">model</th>
+<th align="right">n_presences</th>
+<th align="right">n_background</th>
+<th align="right">threshold</th>
+<th align="right">sensitivity</th>
+<th align="right">background_specificity</th>
+<th align="right">TSS</th>
+</tr></thead>
+<tbody><tr class="odd">
+<td align="left">fc.LQ_rm.2</td>
+<td align="right">81</td>
+<td align="right">1067</td>
+<td align="right">0.142</td>
+<td align="right">0.963</td>
+<td align="right">0.55</td>
+<td align="right">0.513</td>
+</tr></tbody>
+</table>
+<p>Sensitivity represents the proportion of independently withheld
+presences classified as suitable, whereas background-based specificity
+represents the proportion of withheld background records classified as
+unsuitable.</p>
+<p>Because background locations are not confirmed absences, TSS should
+be interpreted as a measure of discrimination between presences and
+background rather than conventional presence-absence classification
+accuracy.</p>
+<p>The classification threshold was selected using the training dataset
+and was not re-optimised on the independent testing data. Furthermore,
+neither the model settings nor the predictor set were modified after
+examining the independent testing results.</p>
+<p>This provides an independent assessment of the completed modelling
+procedure at a preselected classification threshold.</p>
+</div>
 </div>
 <div class="section level2">
 <h2 class="unnumbered" id="references">References<a class="anchor" aria-label="anchor" href="#references"></a>
@@ -1148,10 +1726,10 @@ MaxEnt for Ecologists.”</span> <em>Diversity and Distributions</em> 17
 Kass, Jamie M., Robert Muscarella, Peter J. Galante, et al. 2021.
 <span>“ENMeval 2.0: Redesigned for Customizable and Reproducible
 Modeling of Species’ Niches and Distributions.”</span> <em>Methods in
-Ecology and Evolution</em> 12: 1602–8. <a href="https://doi.org/10.1111/2041-210X.13628" class="external-link">https://doi.org/10.1111/2041-210X.13628</a>.
+Ecology and Evolution</em> 9: 1602–8. <a href="https://doi.org/10.1111/2041-210X.13628" class="external-link">https://doi.org/10.1111/2041-210X.13628</a>.
 </div>
 <div id="ref-mardia2000" class="csl-entry">
-Mardia, Kanti V., and Peter E. Jupp. 2000. <em>Directional
+Mardia, Kanti V., and Peter E. Jupp. 1999. <em>Directional
 Statistics</em>. Wiley.
 </div>
 <div id="ref-muscarella2014" class="csl-entry">
