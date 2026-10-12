@@ -133,3 +133,136 @@ test_that("kde_surface validates geometry, sigma, weights, and normalization", {
     "arg"
   )
 })
+
+# -----------------------------------------------------------------------------
+# Regression tests for input validations (Issues 21, 22, 23, mask argument)
+# -----------------------------------------------------------------------------
+
+test_that("non-square raster cells are rejected before KDE calculation", {
+  x <- make_kde_fixture()
+
+  rectangular_ref <- terra::rast(
+    xmin = 0, xmax = 100,
+    ymin = 0, ymax = 200,
+    resolution = c(10, 20),
+    crs = "EPSG:3059"
+  )
+  terra::values(rectangular_ref) <- 1
+
+  expect_equal(terra::res(rectangular_ref), c(10, 20))
+  expect_error(
+    kde_surface(x$points, sigma = 15, ref = rectangular_ref),
+    "square raster cells"
+  )
+
+  # The same code continues to accept square projected cells.
+  expect_s4_class(
+    kde_surface(x$points, sigma = 15, ref = x$ref),
+    "SpatRaster"
+  )
+})
+
+test_that("zero effective weights cannot be normalized as PDF or meanG", {
+  x <- make_kde_fixture()
+  x$points$weight <- 0
+
+  expect_error(
+    kde_surface(
+      x$points, weight_field = "weight", sigma = 15,
+      ref = x$ref, normalize = "pdf"
+    ),
+    "non-positive or non-finite total mass"
+  )
+
+  expect_error(
+    kde_surface(
+      x$points, weight_field = "weight", sigma = 15,
+      ref = x$ref, normalize = "meanG"
+    ),
+    "non-positive or non-finite mean"
+  )
+
+  # A zero-valued KDE is still a valid unnormalized or intensity surface.
+  none <- kde_surface(
+    x$points, weight_field = "weight", sigma = 15,
+    ref = x$ref, normalize = "none"
+  )
+  intensity <- kde_surface(
+    x$points, weight_field = "weight", sigma = 15,
+    ref = x$ref, normalize = "intensity"
+  )
+  expect_s4_class(none, "SpatRaster")
+  expect_true(any(is.finite(terra::values(none))))
+  expect_true(all(terra::values(none) == 0, na.rm = TRUE))
+  expect_equal(
+    terra::values(intensity),
+    terra::values(none) / prod(terra::res(x$ref)),
+    tolerance = 1e-10
+  )
+})
+
+test_that("masking can produce an empty retained KDE support", {
+  x <- make_kde_fixture()
+  # Mask all cells after smoothing, so normalization is undefined.
+  terra::values(x$ref) <- NA_real_
+
+  expect_error(
+    kde_surface(
+      x$points, sigma = 15, ref = x$ref,
+      normalize = "pdf", mask = TRUE
+    ),
+    "non-positive or non-finite total mass"
+  )
+
+  expect_error(
+    kde_surface(
+      x$points, sigma = 15, ref = x$ref,
+      normalize = "meanG", mask = TRUE
+    ),
+    "non-positive or non-finite mean"
+  )
+})
+
+test_that("invalid backend names and types are rejected", {
+  x <- make_kde_fixture()
+
+  for (bad_engine in list(
+    "fftt", "unknown", 1, NA_character_,
+    character(0), c("fft", "cpp")
+  )) {
+    expect_error(
+      kde_surface(
+        x$points, sigma = 15, ref = x$ref,
+        engine = bad_engine
+      ),
+      "`engine` must be one of"
+    )
+  }
+
+  # A valid engine remains accepted.
+  expect_s4_class(
+    kde_surface(x$points, sigma = 15, ref = x$ref, engine = "auto"),
+    "SpatRaster"
+  )
+})
+
+test_that("mask must be one non-missing logical value", {
+  x <- make_kde_fixture()
+
+  for (bad_mask in list(
+    1, "TRUE", NA, logical(0), c(TRUE, FALSE)
+  )) {
+    expect_error(
+      kde_surface(
+        x$points, sigma = 15, ref = x$ref,
+        mask = bad_mask
+      ),
+      "`mask` must be TRUE or FALSE"
+    )
+  }
+
+  expect_s4_class(
+    kde_surface(x$points, sigma = 15, ref = x$ref, mask = TRUE),
+    "SpatRaster"
+  )
+})

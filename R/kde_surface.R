@@ -26,6 +26,8 @@
 #'
 #' @param ref A `terra::SpatRaster` defining the extent, resolution, origin,
 #'   dimensions, and coordinate reference system of the output raster.
+#'   The raster must have square cells (equal x and y resolution) because
+#'   `fastfocal` uses one cell size when constructing its Gaussian kernel.
 #'
 #' @param normalize Character string specifying the output scaling. One of:
 #'
@@ -33,7 +35,9 @@
 #'   without additional post-smoothing scaling.
 #'
 #'   `"pdf"` divides the smoothed surface by its raster integral so that it
-#'   integrates to approximately 1 over its non-missing support. Values have
+#'   integrates to approximately 1 over its non-missing support. The returned
+#'   relative surface therefore has mean 1 and may be useful as an effort,
+#'   availability, or sampling-bias layer. Values have
 #'   units of inverse map-area units, such as per square metre when the raster
 #'   coordinate units are metres.
 #'
@@ -50,10 +54,9 @@
 #'   normalization. Therefore, `"pdf"` and `"meanG"` normalization are
 #'   calculated over the retained raster footprint.
 #'
-#' @param engine Character string passed to the `engine` argument of
-#'   `fastfocal::fastfocal()`. Common options include `"auto"`, `"fft"`, and
-#'   `"cpp"`, depending on the installed version of `fastfocal`. The default,
-#'   `"auto"`, allows `fastfocal` to select an appropriate backend.
+#' @param engine Character string specifying the `fastfocal` backend.
+#'   Must be one of `"auto"`, `"fft"`, or `"cpp"`. The default, `"auto"`,
+#'   lets `fastfocal` choose the backend.
 #'
 #' @return A single-layer `terra::SpatRaster` aligned with `ref`.
 #'
@@ -95,10 +98,10 @@
 #' The function assumes that `x` and `ref` use the same coordinate reference
 #' system. Points outside the extent of `ref` do not contribute to the output.
 #'
-#' Cell area is calculated as `prod(terra::res(ref))`. Therefore, `"pdf"` and
-#' `"intensity"` assume a regular projected raster with linear coordinate
-#' units. These normalizations should generally not be used with
-#' longitude-latitude rasters because cell area varies spatially.
+#' Cell area is calculated as `prod(terra::res(ref))`. A projected CRS
+#' with linear coordinate units and square raster cells are required. The
+#' Gaussian kernel implemented by `fastfocal` assumes equal x and y
+#' resolution; longitude-latitude rasters are not supported.
 #'
 #' Masking is performed after Gaussian smoothing. Consequently, the mask
 #' determines which cells are retained and included in normalization, but it
@@ -108,9 +111,12 @@
 #' the kernel extends beyond the output grid. The `"pdf"` option renormalizes
 #' the retained surface so that its raster integral is approximately 1.
 #'
-#' For `"pdf"` and `"meanG"` normalization, the input should contain at least
-#' one point with a nonzero effective weight inside the extent of `ref`.
-#' Otherwise, the normalization denominator may be zero or non-finite.
+#' `"pdf"` and `"meanG"` normalization require a positive, finite
+#' denominator after masking (if requested). If the retained KDE has
+#' non-positive or non-finite total mass or global mean, respectively,
+#' the function raises an error instead of dividing by that denominator.
+#' In practice, points must contribute sufficient effective weight within
+#' the retained output footprint.
 #'
 #' Negative weights are permitted by the current input checks, but they can
 #' produce negative raster values and may invalidate probability-density or
@@ -241,6 +247,21 @@ kde_surface <- function(
 
   if (!inherits(ref, "SpatRaster")) {
     stop("`ref` must be a terra SpatRaster.", call. = FALSE)
+  }
+
+  # fastfocal constructs the Gaussian kernel using only the x resolution.
+  # Non-square cells would therefore distort distances along the y axis.
+  ref_res <- terra::res(ref)
+  if (!isTRUE(all.equal(ref_res[1], ref_res[2]))) {
+    stop(
+      "`ref` must have square raster cells because the Gaussian kernel ",
+      "implementation assumes equal x and y resolution.",
+      call. = FALSE
+    )
+  }
+
+  if (!is.logical(mask) || length(mask) != 1L || is.na(mask)) {
+    stop("`mask` must be TRUE or FALSE.", call. = FALSE)
   }
 
   if (!inherits(x, c("sf", "sfc"))) {
@@ -395,6 +416,14 @@ kde_surface <- function(
       na.rm = TRUE
     )[1, 1] * cell_area
 
+    if (!is.finite(total_mass) || total_mass <= 0) {
+      stop(
+        "The KDE cannot be normalized as a probability density because ",
+        "the retained surface has non-positive or non-finite total mass.",
+        call. = FALSE
+      )
+    }
+
     r <- r / total_mass
 
   } else if (normalize == "intensity") {
@@ -409,6 +438,14 @@ kde_surface <- function(
       "mean",
       na.rm = TRUE
     )[1, 1]
+
+    if (!is.finite(m) || m <= 0) {
+      stop(
+        "The KDE cannot be normalized to global mean 1 because ",
+        "the retained surface has a non-positive or non-finite mean.",
+        call. = FALSE
+      )
+    }
 
     r <- r / m
   }
