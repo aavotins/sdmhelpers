@@ -1,3 +1,14 @@
+# sdmhelpers 0.1.0
+
+## First stable release
+
+* Introduced and documented tools supporting species distribution modelling.
+* Improved predictor variance screening across training and cross-validation subsets.
+* Refined spatial kernel-density and temporal overlap functions.
+* Added utilities for independent spatial partitioning and model evaluation.
+* Expanded automated tests and the introductory vignette.
+
+
 # sdmhelpers 0.0.0.9000
 
 ## Initial development version
