@@ -143,113 +143,11 @@ screen_egv_variance <- function(
     fail("`bg_folds` requires `occ_folds`.")
   }
 
-<<<<<<< HEAD
   extract <- function(obj, name, vars = NULL) {
     x <- as.data.frame(methods::slot(obj, "data"))
     pa <- methods::slot(obj, "pa")
     if (nrow(x) != length(pa)) {
       fail("Dimensions of `", name, "@data` and `", name, "@pa` disagree.")
-=======
-  if (length(sd_tol) != 1L ||
-      !is.numeric(sd_tol) ||
-      !is.finite(sd_tol) ||
-      sd_tol < 0) {
-    stop("`sd_tol` must be one finite, non-negative number.")
-  }
-
-  if (
-    !is.numeric(env_sample_n) ||
-    length(env_sample_n) != 1L ||
-    is.na(env_sample_n) ||
-    !is.finite(env_sample_n) ||
-    env_sample_n < 2 ||
-    env_sample_n != floor(env_sample_n)
-  ) {
-    stop("`env_sample_n` must be an integer >= 2.")
-  }
-
-  env_sample_n <- as.integer(env_sample_n)
-
-
-  if (!is.null(seed)) {
-    if (
-      !is.numeric(seed) ||
-      length(seed) != 1L ||
-      is.na(seed) ||
-      !is.finite(seed) ||
-      seed != floor(seed)
-    ) {
-      stop(
-        "`seed` must be NULL or one finite integer.",
-        call. = FALSE
-      )
-    }
-  }
-
-  if (
-    !is.logical(include_test_bg) ||
-    length(include_test_bg) != 1L ||
-    is.na(include_test_bg)
-  ) {
-    ...
-  }
-
-  if (
-    !is.logical(check_test) ||
-    length(check_test) != 1L ||
-    is.na(check_test)
-  ) {
-    ...
-  }
-
-  if (
-    !is.logical(verbose) ||
-    length(verbose) != 1L ||
-    is.na(verbose)
-  ) {
-    ...
-  }
-
-
-
-  # ---- Extract training data ----
-
-  train_data <- as.data.frame(methods::slot(train, "data"))
-  train_pa <- methods::slot(train, "pa")
-
-  if (nrow(train_data) != length(train_pa)) {
-    stop("The dimensions of `train@data` and `train@pa` do not agree.")
-  }
-
-  vars <- names(train_data)
-
-  if (length(vars) == 0L) {
-    stop("No environmental predictors were found in `train@data`.")
-  }
-
-  if (anyDuplicated(vars)) {
-    stop("Predictor names in `train@data` must be unique.")
-  }
-
-  is_numeric <- vapply(train_data, is.numeric, logical(1))
-
-  if (!all(is_numeric)) {
-    stop(
-      "All predictors must be numeric. Non-numeric predictors: ",
-      paste(vars[!is_numeric], collapse = ", ")
-    )
-  }
-
-  # ---- Extract testing data ----
-
-  if (!is.null(test)) {
-
-    test_data <- as.data.frame(methods::slot(test, "data"))
-    test_pa <- methods::slot(test, "pa")
-
-    if (nrow(test_data) != length(test_pa)) {
-      stop("The dimensions of `test@data` and `test@pa` do not agree.")
->>>>>>> 60cdeaf24ae5cbdf34138878f015d1200dd64263
     }
     if (anyNA(pa) || !all(pa %in% c(0, 1))) {
       fail("`", name, "@pa` must contain only 0 and 1 without NA values.")

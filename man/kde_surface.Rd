@@ -31,7 +31,9 @@ For example, if \code{ref} uses a projected coordinate reference system measured
 in metres, \code{sigma = 3000} represents a bandwidth of 3000 metres.}
 
 \item{ref}{A \code{terra::SpatRaster} defining the extent, resolution, origin,
-dimensions, and coordinate reference system of the output raster.}
+dimensions, and coordinate reference system of the output raster.
+The raster must have square cells (equal x and y resolution) because
+\code{fastfocal} uses one cell size when constructing its Gaussian kernel.}
 
 \item{normalize}{Character string specifying the output scaling. One of:
 
@@ -39,7 +41,9 @@ dimensions, and coordinate reference system of the output raster.}
 without additional post-smoothing scaling.
 
 \code{"pdf"} divides the smoothed surface by its raster integral so that it
-integrates to approximately 1 over its non-missing support. Values have
+integrates to approximately 1 over its non-missing support. The returned
+relative surface therefore has mean 1 and may be useful as an effort,
+availability, or sampling-bias layer. Values have
 units of inverse map-area units, such as per square metre when the raster
 coordinate units are metres.
 
@@ -56,10 +60,9 @@ footprint of \code{ref}. Masking is applied after smoothing but before
 normalization. Therefore, \code{"pdf"} and \code{"meanG"} normalization are
 calculated over the retained raster footprint.}
 
-\item{engine}{Character string passed to the \code{engine} argument of
-\code{fastfocal::fastfocal()}. Common options include \code{"auto"}, \code{"fft"}, and
-\code{"cpp"}, depending on the installed version of \code{fastfocal}. The default,
-\code{"auto"}, allows \code{fastfocal} to select an appropriate backend.}
+\item{engine}{Character string specifying the \code{fastfocal} backend.
+Must be one of \code{"auto"}, \code{"fft"}, or \code{"cpp"}. The default, \code{"auto"},
+lets \code{fastfocal} choose the backend.}
 }
 \value{
 A single-layer \code{terra::SpatRaster} aligned with \code{ref}.
@@ -108,10 +111,10 @@ relative to raster-cell size.
 The function assumes that \code{x} and \code{ref} use the same coordinate reference
 system. Points outside the extent of \code{ref} do not contribute to the output.
 
-Cell area is calculated as \code{prod(terra::res(ref))}. Therefore, \code{"pdf"} and
-\code{"intensity"} assume a regular projected raster with linear coordinate
-units. These normalizations should generally not be used with
-longitude-latitude rasters because cell area varies spatially.
+Cell area is calculated as \code{prod(terra::res(ref))}. A projected CRS
+with linear coordinate units and square raster cells are required. The
+Gaussian kernel implemented by \code{fastfocal} assumes equal x and y
+resolution; longitude-latitude rasters are not supported.
 
 Masking is performed after Gaussian smoothing. Consequently, the mask
 determines which cells are retained and included in normalization, but it
@@ -121,9 +124,12 @@ Gaussian kernels near the raster extent may lose part of their mass because
 the kernel extends beyond the output grid. The \code{"pdf"} option renormalizes
 the retained surface so that its raster integral is approximately 1.
 
-For \code{"pdf"} and \code{"meanG"} normalization, the input should contain at least
-one point with a nonzero effective weight inside the extent of \code{ref}.
-Otherwise, the normalization denominator may be zero or non-finite.
+\code{"pdf"} and \code{"meanG"} normalization require a positive, finite
+denominator after masking (if requested). If the retained KDE has
+non-positive or non-finite total mass or global mean, respectively,
+the function raises an error instead of dividing by that denominator.
+In practice, points must contribute sufficient effective weight within
+the retained output footprint.
 
 Negative weights are permitted by the current input checks, but they can
 produce negative raster values and may invalidate probability-density or
