@@ -28,7 +28,7 @@ with `maxnet`. The package contains tools for constructing sampling-bias
 surfaces from target-group records, weighting target-group observations by
 seasonal or combined seasonal and diel overlap, selecting complete spatial
 folds for independent testing, screening environmental predictors, and
-evaluating predictions using the true skill statistic (TSS).
+evaluating predictions using the True Skill Statistic (TSS).
 
 Presence-only SDMs are sensitive to differences between the sampling process
 that generated species observations and the process used to select background
@@ -82,7 +82,7 @@ data("bryophyta_one", package = "sdmhelpers")
 data("habitat_inventories", package = "sdmhelpers")
 data("points100", package = "sdmhelpers")
 data("example_grid", package = "sdmhelpers")
-example_grid=terra::unwrap(example_grid)
+example_grid <- terra::unwrap(example_grid)
 data("example_presences", package = "sdmhelpers")
 data("example_background", package = "sdmhelpers")
 data("example_independent_blocks", package = "sdmhelpers")
@@ -150,9 +150,10 @@ by @silverman1986.
 
 The example grid uses EPSG:3059, whose map units are metres, so `sigma = 3000`
 corresponds to a Gaussian bandwidth of 3 km. With `normalize = "pdf"`, the
-resulting surface is normalized to integrate to one and represents the spatial
-probability density of target-group sampling effort. It can therefore be used
-as a relative sampling-bias surface for background sampling.
+resulting surface is normalised to integrate to one and represents a 
+probability-density-scaled surface of the spatial distribution of target-group 
+records. It can therefore be used as a relative proxy sampling-bias surface for 
+background sampling.
 
 
 ```{r simple-kde, eval=TRUE, fig.cap = "Unweighted target-group sampling-bias surface."}
@@ -165,6 +166,7 @@ simple_bias <- kde_surface(
   mask = TRUE
 )
 
+options(scipen = 999)
 terra::plot(simple_bias, main = "Simple target-group bias")
 ```
 
@@ -176,14 +178,19 @@ sections relax that assumption.
 # Phenologically weighted target-group
 
 Species observed by the same people or recording scheme may nevertheless have
-different seasonal detectability and/or availability. A species recorded mainly in winter, for 
+different seasonal detectability, availability, or both. A species recorded mainly in winter, for 
 example, may provide little information about sampling effort relevant to a
 species recorded mainly during late spring.
 
-`phenology_overlap_weights()` estimates the overlap between the day-of-year
-distribution of a focal species and each comparison species using kernel-density
-overlap. The overlap coefficient describes the common area of two estimated
-distributions [@pastore2018; @pastore2019].
+
+phenology_overlap_weights() estimates overlap between species' day-of-year 
+distributions using overlapping::overlap() [@pastore2019]. This approach 
+provides compatibility with conventional kernel-density overlap estimation [@pastore2018]. 
+However, because day of year is treated as a linear variable, observations 
+near the end and beginning of the calendar year are not considered adjacent. 
+For species with observation periods spanning this boundary, 
+torus_overlap_many() provides an alternative based on circular 
+kernel-density estimation with constant (e.g. midday) value for the time of day. 
 
 First, day of year is added to the bird records.
 
@@ -198,8 +205,8 @@ target_code <- bird_dates$code[
 target_code
 ```
 
-We then estimate phenological overlap between the focal species and every
-species in the target group.
+We then estimate phenological overlap between the focal species (synonymous to 
+target-species) and every species in the target-group.
 
 ```{r phenology-overlap}
 phenology_weights <- phenology_overlap_weights(
@@ -259,6 +266,7 @@ phenology_bias <- kde_surface(
   mask = TRUE
 )
 
+options(scipen = 999)
 terra::plot(
   phenology_bias,
   main = "Phenologically weighted target-group bias"
@@ -270,7 +278,7 @@ not as an estimate of species occurrence probability. Its purpose is to
 describe where observations relevant to the focal species' seasonal sampling
 process were more or less likely to have been collected.
 
-# Seasonally and dielly weighted target-group
+# Target-group weighting by seasonal and diel overlap
 
 For taxa whose detectability varies both seasonally and through the day,
 seasonal overlap alone may be insufficient. `torus_overlap_many()` represents
@@ -279,24 +287,35 @@ two-dimensional torus. Circular treatment is important because both annual and
 daily cycles wrap around their endpoints; see @mardia2000 for directional
 statistics and @ridout2009 for overlap estimation of diel activity patterns.
 
-The bird dataset contains date-time observations.
-Because this is an introductory vignette, the example uses the focal species
-with the largest number of valid date-times and compares it with every target-groups' species.
+The bird dataset contains date-time observations. For this introductory example, 
+we select the focal species with the largest number of valid date-time 
+records and compare its seasonal and diel observation distributions with 
+those of every species in the target group (including the focal species itself).
 
 ```{r torus-data}
+comparison_data <- aves_small[
+  !is.na(aves_small$date_time),
+  ,
+  drop = FALSE
+]
 
-target_species_torus <- target_species
+target_species_torus <- names(
+  sort(table(comparison_data$species), decreasing = TRUE)
+)[1]
 
-reference_data <- aves_small[aves_small$species == target_species_torus & 
-                               !is.na(aves_small$date_time),]
-
-comparison_data <- aves_small[!is.na(aves_small$date_time),]
+reference_data <- comparison_data[
+  comparison_data$species == target_species_torus,
+  ,
+  drop = FALSE
+]
 
 reference_data$obs_date <- as.Date(reference_data$date_time)
 reference_data$obs_time <- hms::as_hms(reference_data$date_time)
 
 comparison_data$obs_date <- as.Date(comparison_data$date_time)
 comparison_data$obs_time <- hms::as_hms(comparison_data$date_time)
+
+
 ```
 
 For speed, the example uses a coarser evaluation grid than would often be used
@@ -328,12 +347,12 @@ torus_overlap <- torus_overlap[
 head(torus_overlap, 10)
 ```
 
-The overlap coefficient ranges from zero to one for normalized densities. A
+The overlap coefficient ranges from zero to one for normalised densities. A
 large value indicates that a comparison species has a seasonal-diel observation
 distribution similar to the focal species.
 
 To use these coefficients as relative species weights in a target group, they
-can be normalized across comparison species.
+can be normalised across comparison species.
 
 ```{r torus-weights}
 ok <- is.finite(torus_overlap$overlap)
@@ -375,22 +394,31 @@ torus_result <- torus_overlap_many(
   return_density = TRUE
 )
 
-ggplot(torus_result$density,aes(x = seasonal_position_days,
-                          y = decimal_hour,
-                          fill = comparison_density)) +
+ggplot(torus_result$density,
+       aes(
+         x = seasonal_position_days,
+         y = decimal_hour,
+         fill = comparison_density
+         )
+       ) +
   geom_raster() +
   facet_wrap(~ comparison) +
   scale_y_continuous(breaks = seq(0, 24, by = 3)) +
   viridis::scale_fill_viridis() +
-  labs(x = "Seasonal position (days from 1 January)",
+  labs(
+    x = "Seasonal position (days from 1 January)",
        y = "Time of day",
        fill = "Density",
        title = "Species-specific registration activity") +
   theme_bw()
 
-ggplot(torus_result$density,aes(x = seasonal_position_days,
-                          y = decimal_hour,
-                          fill = shared_density)) +
+ggplot(torus_result$density,
+       aes(
+         x = seasonal_position_days,
+         y = decimal_hour,
+         fill = shared_density
+         )
+       ) +
   geom_raster() +
   facet_wrap(~ comparison) +
   scale_y_continuous(breaks = seq(0, 24, by = 3)) +
@@ -398,7 +426,11 @@ ggplot(torus_result$density,aes(x = seasonal_position_days,
   labs(x = "Seasonal position (days from 1 January)",
        y = "Time of day",
        fill = "Density",
-       title = "Registration activity overlap with STRALU") +
+       title = paste0(
+         "Registration activity overlap with ", 
+         target_species_torus
+         )
+       ) +
   theme_bw()
 
 
@@ -412,16 +444,16 @@ species itself was not necessarily recorded during that survey. In this case,
 `doy_kde_weights()` can estimate how closely each inventory date corresponds to
 the seasonal registration-activity distribution of a target species.
 
-The function estimates a wrapped day-of-year KDE from reference dates and
-evaluates that density at another set of dates. The wrapped construction reduces
-the artificial separation between observations near the end and beginning of a
-year. Bandwidth controls the degree of smoothing, as in conventional KDE
+The function estimates a circular approximation to a day-of-year KDE from the 
+reference dates and evaluates that density at another set of dates. Circularity 
+is approximated by periodically extending the reference observations across the 
+seasonal boundary, which reduces boundary effects between observations near the 
+end and beginning of the year. Bandwidth controls the degree of smoothing, 
+as in conventional KDE
 [@silverman1986].
 
-The example below uses one bryophyte species, which is considered old-growth 
-forest specialist species, thus specifically searched during habitat inventories, as the
-reference seasonal distribution and weights the dates in
-`habitat_inventories`.
+The example below uses one bryophyte species considered to be an old-growth 
+forest specialist and therefore specifically searched for during habitat inventories.
 
 ```{r known-dates}
 bryophyta_species <- names(
@@ -582,46 +614,110 @@ presence_only_selection <- select_folds_by_quota(
 presence_only_selection$summary$prop_selected
 ```
 
+
 # Screening predictor variance
 
-Predictors with zero or extremely small variance in the data available for
-model fitting can create numerical problems and cannot meaningfully contribute
-to estimating an environmental response. `screen_egv_variance()` checks
-predictor variance across several SDM-relevant subsets rather than only across
-the complete dataset.
+Predictors that are constant across all data used for model fitting cannot
+provide an estimable environmental response. Low variance within an individual
+subset, however, does not necessarily imply that a predictor is uninformative:
+for example, a predictor may be constant among presences but variable among
+background records. `screen_egv_variance()` therefore distinguishes the
+presence, background, and combined-data checks and records which checks
+contribute to predictor selection.
 
 The example environmental raster contains five ecogeographical variables.
+The presence and background locations were split spatially into independent
+training and testing sets in the preceding section.
 
 ```{r egv}
 env <- terra::rast(egv_file)
 env
 ```
 
-For a compact vignette example, a subset of the training background is used to
-construct an `SDMtune::SWD` object.
+We first prepare the training and independent-testing datasets **once**, using
+the same environmental predictors. `SDMtune::prepareSWD()` removes locations
+with missing values in any supplied environmental layer. Many example records
+fall outside the raster's complete-data domain; the counts below show how many
+observations remain after extraction. All subsequent checks, fold assignments,
+model fitting, and evaluation use these retained records.
 
-```{r swd,eval=TRUE}
-set.seed(1)
-
-bg_screen <- bg_train[sample.int(nrow(bg_train), 5000), ]
-
-train_swd <- SDMtune::prepareSWD(
+```{r prepare-swd}
+training_set <- SDMtune::prepareSWD(
   species = "example_species",
   p = pres_train,
-  a = bg_screen,
-  env = env
+  a = bg_train,
+  env = env,
+  verbose = FALSE
+)
+
+testing_set <- SDMtune::prepareSWD(
+  species = "example_species",
+  p = pres_test,
+  a = bg_test,
+  env = env,
+  verbose = FALSE
+)
+
+c(
+  training_presences = sum(training_set@pa == 1),
+  training_background = sum(training_set@pa == 0),
+  testing_presences = sum(testing_set@pa == 1),
+  testing_background = sum(testing_set@pa == 0)
 )
 ```
 
-The environmental-domain check is added by supplying `env`.
+For spatial cross-validation, we assign folds **after** the environmental-value
+extraction so that the fold identifiers correspond exactly to rows in the
+training `SWD` object. `ENMeval::get.block()` expects longitude-latitude
+coordinates; the projected EPSG:3059 coordinates are therefore converted to
+EPSG:4326 solely for constructing the folds. This does not change the predictor
+values stored in `training_set`.
 
-```{r variance-screen, eval=TRUE}
+```{r training-cv-folds}
+as_lonlat <- function(coords) {
+  pts <- sf::st_as_sf(
+    coords,
+    coords = c("X", "Y"),
+    crs = 3059
+  )
+  ll <- sf::st_coordinates(sf::st_transform(pts, 4326))
+  data.frame(lon = ll[, 1], lat = ll[, 2])
+}
+
+pres_idx <- training_set@pa == 1
+bg_idx <- training_set@pa == 0
+
+block_folds <- ENMeval::get.block(
+  occs = as_lonlat(training_set@coords[pres_idx, , drop = FALSE]),
+  bg = as_lonlat(training_set@coords[bg_idx, , drop = FALSE])
+)
+```
+
+The screen checks presences, backgrounds, and their combination both across
+all training records and within each cross-validation training partition.
+Because `bg_folds` is supplied, the corresponding held-out background fold is
+excluded as well as the presence fold. Presence-only checks are retained as
+diagnostics but do not automatically remove predictors. The independent test
+set can also be diagnosed, while the default leakage-safe settings ensure that
+its values do not affect `keep` or `remove`.
+
+```{r variance-screen}
 variance_screen <- screen_egv_variance(
-  train = train_swd,
+  train = training_set,
+  test = testing_set,
+  occ_folds = block_folds$occs.grp,
+  bg_folds = block_folds$bg.grp,
   env = env,
-  env_sample_n = 5000,
-  seed = 1,
+  env_sample_n = 5000L,
+  seed = 1L,
   sd_tol = 0,
+  check_presences = TRUE,
+  check_background = TRUE,
+  check_combined = TRUE,
+  presence_affects_selection = FALSE,
+  include_test_bg = FALSE,
+  check_test = TRUE,
+  test_affects_selection = FALSE,
   verbose = FALSE
 )
 
@@ -629,230 +725,498 @@ variance_screen$keep
 variance_screen$remove
 ```
 
-A predictor is retained only if it passes every requested check. The
-`diagnostics` component provides the standard deviation and failure reason for
-every evaluated predictor/subset combination.
+A predictor is removed only if it fails at least one check marked
+`used_for_selection = TRUE`. A failed diagnostic-only check remains visible in
+`diagnostics` but does not affect predictor selection. Even though this example
+calculates diagnostic-only checks on the independent test, their results must
+not be used to revise the chosen predictor set or model. In a final analysis,
+it is preferable not to inspect the held-out test diagnostics until the model
+specification has been fixed.
 
-```{r variance-diagnostics, eval=TRUE}
+```{r variance-diagnostics}
 head(variance_screen$diagnostics)
+
+subset(
+  variance_screen$diagnostics,
+  failed & !used_for_selection,
+  select = c(check, subset, group, variable, sd, reason)
+)
+
 ```
+
+The random environmental-domain check samples raster cells independently of
+the observed training background locations. It does **not** resample the
+background records already contained in `training_set`.
+
+A common predictor set screened across all CV partitions is convenient for
+this introductory example. For an unbiased assessment of a pipeline that
+selects predictors anew, that selection must instead be performed separately
+inside each CV training partition.
+
+```{r}
+subset(
+  variance_screen$diagnostics,
+  check == "cv_training",
+  select = c(
+    check, subset, group, fold,
+    variable, sd, failed, used_for_selection
+  )
+)
+
+```
+
+
+
 
 
 # Fitting a small maxnet model
 
-The package is designed to support, rather than replace, SDM software. The
-following compact example fits a `maxnet` model after the independent split
-created above. Only predictors retained by the variance screen are used.
-
-First, extract environmental values for the training and independent-testing
-locations.
-
-```{r extract-env}
-training_set <- SDMtune::prepareSWD(
-  species = "example_species",
-  p = pres_train,
-  a = bg_train,
-  env = env
-)
-training_set=SDMtune::addSamplesToBg(training_set)
-
-testing_set <- SDMtune::prepareSWD(
-  species = "example_species",
-  p = pres_test,
-  a = bg_test,
-  env = env
-)
-testing_set=SDMtune::addSamplesToBg(testing_set)
-
-```
-
-
-Fit the model using presences (`1`) and background (`0`).
+`sdmhelpers` supports rather than replaces SDM software. Here we fit a small
+illustrative `maxnet` model to the training data using **only the predictors
+retained by the variance screen**. This model is for demonstration; the
+cross-validation example below can be used to compare alternative feature
+classes and regularisation multipliers before fitting a final model.
 
 ```{r fit-maxnet}
+selected_vars <- variance_screen$keep
+
+if (!length(selected_vars)) {
+  stop("No predictors passed variance screening.")
+}
+
 maxnet_model <- maxnet::maxnet(
   p = training_set@pa,
-  data = training_set@data
+  data = training_set@data[, selected_vars, drop = FALSE],
+  addsamplestobackground = TRUE
 )
 ```
 
+Following the conventional Maxent approach, presence locations not already
+represented in the background are additionally included as background samples
+during model fitting. This behaviour is enabled by
+`addsamplestobackground = TRUE`, which is also the default in `maxnet`.
+
+We do not separately call `SDMtune::addSamplesToBg()` because `maxnet`
+handles this operation internally. Consequently, the original `training_set`
+object remains unchanged, and its presence and background records can be
+used consistently for subsequent evaluation and cross-validation.
+
+Importantly, this operation uses only the training data. Independent testing
+presences and background records remain withheld from model fitting.
 
 # Evaluating models with TSS
 
-The true skill statistic is
+The true skill statistic (TSS) is defined as
 
 \[
-\mathrm{TSS} = \mathrm{sensitivity} + \mathrm{specificity} - 1,
+\mathrm{TSS} = \mathrm{sensitivity} + \mathrm{specificity} - 1.
 \]
 
-and was proposed for SDM evaluation as an alternative to measures such as
-Cohen's kappa [@allouche2006].
+`max_tss()` evaluates candidate thresholds and returns the threshold that
+maximizes TSS, together with sensitivity and specificity. For
+presence-background data, background locations are not confirmed absences;
+thus the reported specificity is the proportion of background records
+classified as negative, and TSS should be interpreted as
+presence-background discrimination rather than classification accuracy
+against known absences [@allouche2006].
 
-`max_tss()` evaluates all unique finite prediction thresholds and returns the
-threshold that maximizes TSS together with sensitivity and specificity.
+Critically, selecting a threshold using independent-test predictions and then
+reporting TSS on that same test set would yield a test-optimized estimate. Here
+we select the threshold using **training predictions only**, and then apply
+it unchanged to the withheld independent test. The resulting independent-test
+TSS is not optimized on test labels, although the threshold chosen on fitting
+data may be optimistic for the training sample itself.
 
-For presence-background models, background locations are not confirmed
-absences. Consequently, the value reported as specificity is operationally the
-proportion of background records classified as negative, and the resulting TSS
-should be interpreted as presence-background discrimination rather than
-classification accuracy against known true absences.
+```{r training-threshold}
+train_p_pos <- predict(
+  maxnet_model,
+  newdata = training_set@data[
+    training_set@pa == 1, selected_vars, drop = FALSE
+  ],
+  type = "cloglog"
+)
+
+train_p_bg <- predict(
+  maxnet_model,
+  newdata = training_set@data[
+    training_set@pa == 0, selected_vars, drop = FALSE
+  ],
+  type = "cloglog"
+)
+
+training_tss <- max_tss(p_pos = train_p_pos, p_neg = train_p_bg)
+threshold <- unname(training_tss["threshold"])
+training_tss
+```
 
 ```{r independent-predictions}
-p_pos <- predict(
+test_p_pos <- predict(
   maxnet_model,
-  newdata = testing_set@data[testing_set@pa == 1, ],
+  newdata = testing_set@data[
+    testing_set@pa == 1, selected_vars, drop = FALSE
+  ],
   type = "cloglog"
 )
 
-p_neg <- predict(
+test_p_bg <- predict(
   maxnet_model,
-  newdata = testing_set@data[testing_set@pa == 0, ],
+  newdata = testing_set@data[
+    testing_set@pa == 0, selected_vars, drop = FALSE
+  ],
   type = "cloglog"
 )
 
-tss_result <- max_tss(
-  p_pos = p_pos,
-  p_neg = p_neg
-)
-
-tss_result
-```
-
-The selected threshold can then be used to convert continuous predictions into
-binary classifications if a binary map or confusion matrix is required.
-
-```{r apply-threshold}
-threshold <- unname(tss_result["threshold"])
-
-presence_class <- p_pos >= threshold
-background_class <- p_neg >= threshold
+independent_sensitivity <- mean(test_p_pos >= threshold)
+independent_background_specificity <- mean(test_p_bg < threshold)
 
 c(
-  sensitivity = mean(presence_class),
-  background_specificity = mean(!background_class)
+  threshold_from_training = threshold,
+  sensitivity = independent_sensitivity,
+  background_specificity = independent_background_specificity,
+  independent_TSS = independent_sensitivity +
+    independent_background_specificity - 1
 )
 ```
+
+The same threshold can be applied to predictions at raster cells when a binary
+suitability map is needed. For an independent final evaluation, the threshold
+and all predictor-selection and tuning decisions should be fixed before the
+held-out test predictions are examined.
 
 # Cross-validation TSS with ENMeval
 
-The independent testing set created above is reserved for evaluating the final
-model and should not be used during model tuning. Alternative model settings
-can instead be compared by cross-validation using only the training data.
-Spatially structured cross-validation is particularly useful when observations
-are spatially autocorrelated because it reduces spatial dependence between
-calibration and validation data and provides a more stringent assessment of
-spatial transferability than random partitioning [@roberts2017].
+The independent testing set created earlier is reserved for the final assessment 
+of the fitted model. Model tuning instead uses spatial cross-validation of the 
+training data, keeping the independent testing set out of predictor-selection 
+and tuning decisions. Spatial resampling can reduce dependence between model 
+calibration and validation observations when the intended prediction involves 
+geographic transfer [@roberts2017].
 
-ENMeval provides several approaches for partitioning occurrence and background
-records and for evaluating alternative Maxent and `maxnet` model settings
-[@muscarella2014; @kass2021]. In this example, the training records are divided
-into four geographically structured groups using `ENMeval::get.block()`.
+`ENMeval` supports spatial partitions and multiple complexity settings for Maxent 
+and `maxnet` models [@muscarella2014; @kass2021]. We reuse the four presence and 
+background fold assignments (`block_folds`) created in the predictor-screening 
+section. These were calculated using the records remaining in `training_set` 
+after environmental values were extracted, so their ordering matches the model 
+inputs. There is no need to generate a second set of folds.
 
-```{r}
-block_folds <- ENMeval::get.block(occ = training_set@coords[training_set@pa == 1, ], 
-                                  bg = training_set@coords[training_set@pa == 0, ])
+For illustration, we compare three feature-class settings (linear, `L`; 
+quadratic, `Q`; and linear plus quadratic, `LQ`) and three regularisation 
+multipliers (0.5, 1, and 2). The regularisation multiplier controls the strength 
+of model penalisation; thus, nine candidate settings are evaluated.
+
+**Important:** The predictor set used below is the one returned 
+by `screen_egv_variance()` in the preceding section. It is held constant across 
+the candidate model settings for this introductory example.
+
+```{r enmeval-inputs}
+selected_vars <- variance_screen$keep
+
+if (length(selected_vars) == 0L) {
+  stop("No predictors passed variance screening.")
+}
+
+pres_idx <- training_set@pa == 1
+bg_idx <- training_set@pa == 0
+
+# The as_lonlat() helper and block_folds were defined in the preceding section.
+# ENMeval receives coordinates in the first two columns, followed by predictors.
+presences <- cbind(
+  as_lonlat(training_set@coords[pres_idx, , drop = FALSE]),
+  training_set@data[pres_idx, selected_vars, drop = FALSE]
+)
+
+background <- cbind(
+  as_lonlat(training_set@coords[bg_idx, , drop = FALSE]),
+  training_set@data[bg_idx, selected_vars, drop = FALSE]
+)
+
+stopifnot(
+  length(block_folds$occs.grp) == nrow(presences),
+  length(block_folds$bg.grp) == nrow(background)
+)
 ```
 
-The block method divides occurrence localities into four spatial groups and
-assigns background records to the corresponding geographic partitions. Because
-the example coordinates are in the projected LKS-92 / Latvia TM coordinate
-reference system, the partitions are defined using projected X and Y
-coordinates rather than geographic longitude and latitude.
+Following the conventional Maxent approach, occurrence locations are additionally 
+included among the background samples used for model fitting by setting 
+`addsamplestobackground = TRUE`. This behavior is the default in both `maxnet` 
+and ENMeval's Maxnet implementation. During spatial cross-validation, only the 
+training data for each partition should contribute to model fitting, while 
+validation presences and backgrounds remain withheld for evaluation. The 
+option `validation.bg = "partition"` additionally restricts validation comparisons 
+to the background records assigned to the corresponding validation partition.
 
-The resulting fold identifiers are supplied to `ENMevaluate()` as user-defined
-partitions. This makes it possible to use the same spatial groups for both
-presence and background observations while retaining explicit control over the
-cross-validation design.
-
-For this example, three feature-class combinations and three regularization
-multipliers are evaluated, producing nine candidate model settings. Linear
-(`L`), quadratic (`Q`), and combined linear-quadratic (`LQ`) feature classes
-control the shapes of fitted environmental responses, whereas the
-regularization multiplier controls the strength of penalization and therefore
-model complexity.
-
-```{r fit-maxnet-ENMeval}
-presences=cbind(training_set@coords[training_set@pa == 1, ],
-                 training_set@data[training_set@pa == 1, ])
-background=cbind(training_set@coords[training_set@pa == 0, ],
-           training_set@data[training_set@pa == 0, ])
-pirmais <- ENMeval::ENMevaluate(occs = presences, 
-                       bg = background,
-                       algorithm = 'maxnet', 
-                       partitions = 'user', 
-                       user.grp=list(occs.grp=block_folds$occs.grp,
-                                     bg.grp=block_folds$bg.grp),
-                       tune.args = list(fc = c('L','Q','LQ'), 
-                                        rm = c(0.5,1,2)),
-                       other.settings=list(validation.bg='partition'),
-                       user.eval = tss_user_eval)
+```{r enmeval-tuning, message=FALSE}
+enmeval_result <- ENMeval::ENMevaluate(
+  occs = presences,
+  bg = background,
+  algorithm = "maxnet",
+  partitions = "user",
+  user.grp = list(
+    occs.grp = block_folds$occs.grp,
+    bg.grp = block_folds$bg.grp
+  ),
+  tune.args = list(
+    fc = c("L", "Q", "LQ"),
+    rm = c(0.5, 1, 2)
+  ),
+  other.settings = list(
+    validation.bg = "partition",
+    addsamplestobackground = TRUE
+  ),
+  user.eval = tss_user_eval
+)
 ```
 
-The argument `user.eval = tss_user_eval` adds TSS as a custom evaluation metric.
-For every cross-validation fold, `ENMeval` supplies predictions for training 
-occurrences, validation occurrences, training background records and validation 
-background records to `tss_user_eval()`, which then applies `max_tss()` to these validation
-predictions and returns the maximum TSS and its associated classification
-threshold.
+The `user.eval = tss_user_eval` argument adds the package's custom TSS calculations. 
+For each candidate model and cross-validation fold, `ENMeval` supplies predictions 
+for training and validation occurrences and background records. `tss_user_eval()` 
+applies `max_tss()` separately to the training and validation predictions. Its 
+fold-level output includes maximum validation TSS (`tss.val`), the corresponding 
+validation threshold (`thr.val`), sensitivity (`sens.val`), background-based 
+specificity (`spec.val`), and maximum training TSS (`tss.train`).
 
-When
+In presence-background models, background locations are not confirmed absences. 
+Consequently, `spec.val` is the proportion of background predictions below the 
+selected threshold, not specificity estimated using verified absences.
 
-```{r,eval=FALSE}
+**Interpretation of threshold optimisation.** Since `thr.val` is selected to 
+maximise TSS on the same validation observations used to calculate `tss.val`, 
+validation TSS is optimised for that fold. The spatial validation records were 
+withheld from *model fitting*, but not from *threshold selection*. Accordingly, 
+these TSS values can help compare candidate settings, but should not be presented 
+as fully independent estimates of the performance of a preselected classification 
+threshold. For a final independent threshold-based assessment, select the threshold 
+without reference to the independent test outcomes and apply it unchanged to that 
+test set, as described in the preceding evaluation section.
 
-other.settings = list(validation.bg = "partition")
+The model-level results aggregate values across folds. A compact table is more 
+useful in an introductory vignette than printing every available statistic:
+
+```{r enmeval-results}
+cv_results <- ENMeval::eval.results(enmeval_result)
+
+knitr::kable(
+  cv_results[, c(
+    "fc", "rm", "auc.val.avg",
+    "tss.val.avg", "tss.val.sd",
+    "AICc", "delta.AICc"
+  )],
+  digits = 3
+)
+```
+
+Here, the Continuous Boyce Index (`CBI`) is available only when the 
+optional `ecospat` dependency is installed. Moreover, because the example passes 
+extracted environmental values rather than a full environmental raster 
+to `ENMevaluate()`, its AICc calculation uses the supplied background predictions 
+as an approximation to the environmental domain. Both points matter when 
+interpreting or comparing these statistics.
+
+Fold-specific statistics can also be inspected; the `fold` column identifies 
+the validation partition:
+
+```{r enmeval-fold-results}
+cv_folds <- ENMeval::eval.results.partitions(enmeval_result)
+
+knitr::kable(
+  head(cv_folds[, c(
+    "tune.args", "fold", "auc.val",
+    "tss.val", "thr.val", "tss.train"
+  )], 12),
+  digits = 3
+)
+```
+
+Cross-validation helps choose model settings using the training dataset. The 
+final model can then be fitted using the selected predictors and model 
+settings and evaluated once with the withheld independent test set. In a fully 
+nested evaluation of the *complete* modelling procedure, predictor screening 
+and other data-dependent preprocessing would also be repeated within each 
+cross-validation training fold rather than performed once on all training records.
+
+
+
+# Final model selection and independent testing
+
+After evaluating alternative model settings using spatial cross-validation,
+the preferred model can be selected from the `ENMevaluation` object.
+ENMeval stores models fitted using the complete training dataset for each
+combination of feature classes and regularisation multipliers. Consequently,
+there is no need to fit the selected model again manually.
+
+The independent testing dataset remains withheld from predictor screening
+decisions, model tuning, and fitting.
+
+## Selecting the preferred model
+
+For this introductory example, we select the model with the lowest
+corrected Akaike Information Criterion (AICc). Other selection strategies
+may also consider cross-validation performance or a combination of
+criteria.
+
+```{r select-final-model}
+cv_results <- ENMeval::eval.results(enmeval_result)
+
+valid_models <- which(is.finite(cv_results$AICc))
+
+if (!length(valid_models)) {
+  stop("No candidate model has a finite AICc.")
+}
+
+best_idx <- valid_models[
+  which.min(cv_results$AICc[valid_models])
+]
+
+best_settings <- cv_results[best_idx, , drop = FALSE]
+
+best_settings[, c(
+  "fc", "rm", "tune.args",
+  "AICc", "delta.AICc",
+  "auc.val.avg", "tss.val.avg"
+)]
+```
+
+## Extracting the selected model
+
+The `tune.args` column identifies each candidate model within the list
+returned by `ENMeval::eval.models()`. We use this identifier to extract
+the model fitted with the complete training dataset.
+
+```{r extract-final-model}
+best_model_id <- as.character(
+  best_settings$tune.args[1]
+)
+
+fitted_models <- ENMeval::eval.models(enmeval_result)
+
+final_model <- fitted_models[[best_model_id]]
+
+if (is.null(final_model)) {
+  stop("Selected model was not found in enmeval_result.")
+}
+
+stopifnot(inherits(final_model, "maxnet"))
+```
+
+The resulting `final_model` retains the feature classes, regularisation
+multiplier, and background convention used during ENMeval fitting.
+No independent testing observations have contributed to this model.
+
+## Selecting a classification threshold
+
+To evaluate threshold-based predictive performance, we first determine
+the classification threshold using training predictions only.
+
+Here, `max_tss()` identifies the threshold maximising TSS between
+training presences and background records. This threshold will
+subsequently be applied unchanged to the independent testing data.
+
+```{r final-training-threshold}
+selected_vars <- variance_screen$keep
+
+train_x <- training_set@data[
+  , selected_vars, drop = FALSE
+]
+
+train_y <- training_set@pa
+
+train_predictions <- predict(
+  final_model,
+  newdata = train_x,
+  type = "cloglog"
+)
+
+train_tss <- max_tss(
+  p_pos = train_predictions[train_y == 1],
+  p_neg = train_predictions[train_y == 0]
+)
+
+threshold <- unname(train_tss["threshold"])
+
+train_tss
 ```
 
 
-is used, validation occurrences are compared only with background records from
-the corresponding validation partition. This means that both presences and
-background records are spatially withheld during evaluation. If
-`validation.bg = "full"` is used instead, validation occurrences are compared
-with the combined training and validation background predictions.
 
-For presence-background models, background locations are not confirmed
-absences. Consequently, the reported specificity is the proportion of
-background predictions falling below the selected threshold rather than
-specificity calculated from known true absences. The resulting TSS should
-therefore be interpreted as a measure of discrimination between presences and
-background rather than conventional classification accuracy.
+Although this threshold is optimised on the training data, it is selected
+without consulting the independent testing observations. Consequently,
+its application to the independent dataset provides an assessment of
+performance at a previously determined threshold.
 
-`tss_user_eval()` selects the threshold maximizing TSS separately for the
-training and validation predictions. Consequently, both `tss.train` and
-`tss.val` are optimized on the same data on which they are evaluated. In
-particular, `tss.val` should therefore be regarded as a cross-validation metric
-for comparing candidate models rather than as a fully independent estimate of
-threshold-based predictive performance.
+## Independent testing
 
-The model-level results returned by `ENMeval` summarize the fold-level
-statistics and can be inspected with:
+The selected model is now applied to the independently withheld presence
+and background records. Only predictors used during model fitting are
+included in the prediction dataset.
 
+```{r independent-testing}
+test_x <- testing_set@data[
+  , selected_vars, drop = FALSE
+]
 
-```{r}
-ENMeval::eval.results(pirmais)
+test_y <- testing_set@pa
+
+# Apply ENMeval's clamping convention if enabled
+if (isTRUE(enmeval_result@doClamp)) {
+  test_x <- ENMeval::clamp.vars(
+    orig.vals = test_x,
+    ref.vals = train_x,
+    left = enmeval_result@clamp.directions$left,
+    right = enmeval_result@clamp.directions$right
+  )
+}
+
+test_predictions <- predict(
+  final_model,
+  newdata = test_x,
+  type = "cloglog"
+)
+
+test_pos <- test_predictions[test_y == 1]
+test_bg <- test_predictions[test_y == 0]
+
+test_sensitivity <- mean(test_pos >= threshold)
+test_specificity <- mean(test_bg < threshold)
+
+independent_tss <-
+  test_sensitivity + test_specificity - 1
+
+independent_results <- data.frame(
+  model = best_model_id,
+  n_presences = length(test_pos),
+  n_background = length(test_bg),
+  threshold = threshold,
+  sensitivity = test_sensitivity,
+  background_specificity = test_specificity,
+  TSS = independent_tss
+)
+
+knitr::kable(
+  independent_results,
+  digits = 3,
+  caption = "Independent testing results for the selected Maxnet model."
+)
 ```
 
+Sensitivity represents the proportion of independently withheld
+presences classified as suitable, whereas background-based specificity
+represents the proportion of withheld background records classified as
+unsuitable.
+
+Because background locations are not confirmed absences, TSS should be
+interpreted as a measure of discrimination between presences and
+background rather than conventional presence-absence classification
+accuracy.
+
+The classification threshold was selected using the training dataset
+and was not re-optimised on the independent testing data. Furthermore,
+neither the model settings nor the predictor set were modified after
+examining the independent testing results.
+
+This provides an independent assessment of the completed modelling
+procedure at a preselected classification threshold.
 
 
-Fold-specific results can be examined with:
-
-
-```{r}
-
-ENMeval::eval.results.partitions(pirmais)
-```
-
-
-Cross-validation TSS and independent-test TSS serve different purposes in this
-workflow. Cross-validation is used to compare candidate feature classes,
-regularization multipliers or other model settings using only the training
-data. Once the preferred settings have been selected and the final model has
-been fitted, the completely withheld independent testing set can be used for a
-separate assessment of predictive performance.
-
-For a strictly independent threshold-based assessment, the classification
-threshold should be selected from training or cross-validation data and then
-applied unchanged to the independent testing data, rather than re-optimizing
-the threshold on the independent test set.
 
 
 # References
