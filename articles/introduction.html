@@ -745,7 +745,7 @@ is used to construct an <code><a href="https://consbiol-unibern.github.io/SDMtun
 <span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Extracting predictor information for <span style="color: #00BB00;">absence/background</span> locations</span></span>
 <span><span class="co">#&gt; Warning: <span style="color: #BBBB00;">!</span> <span style="color: #0000BB;">4761</span> locations are NA for some environmental variables and have been</span></span>
 <span><span class="co">#&gt;   discarded</span></span>
-<span><span class="co">#&gt; <span style="color: #00BB00;">✔</span> Extracting predictor information for <span style="color: #00BB00;">absence/background</span> locations <span style="color: #B2B2B2;">[155ms]</span></span></span>
+<span><span class="co">#&gt; <span style="color: #00BB00;">✔</span> Extracting predictor information for <span style="color: #00BB00;">absence/background</span> locations <span style="color: #B2B2B2;">[171ms]</span></span></span>
 <span><span class="co">#&gt; </span></span></code></pre></div>
 <p>The environmental-domain check is added by supplying
 <code>env</code>.</p>
@@ -802,12 +802,12 @@ independent-testing locations.</p>
 <span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Extracting predictor information for <span style="color: #00BB00;">presence</span> locations</span></span>
 <span><span class="co">#&gt; Warning: <span style="color: #BBBB00;">!</span> <span style="color: #0000BB;">2009</span> locations are NA for some environmental variables and have been</span></span>
 <span><span class="co">#&gt;   discarded</span></span>
-<span><span class="co">#&gt; <span style="color: #00BB00;">✔</span> Extracting predictor information for <span style="color: #00BB00;">presence</span> locations <span style="color: #B2B2B2;">[26ms]</span></span></span>
+<span><span class="co">#&gt; <span style="color: #00BB00;">✔</span> Extracting predictor information for <span style="color: #00BB00;">presence</span> locations <span style="color: #B2B2B2;">[27ms]</span></span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Extracting predictor information for <span style="color: #00BB00;">absence/background</span> locations</span></span>
 <span><span class="co">#&gt; Warning: <span style="color: #BBBB00;">!</span> <span style="color: #0000BB;">28679</span> locations are NA for some environmental variables and have been</span></span>
 <span><span class="co">#&gt;   discarded</span></span>
-<span><span class="co">#&gt; <span style="color: #00BB00;">✔</span> Extracting predictor information for <span style="color: #00BB00;">absence/background</span> locations <span style="color: #B2B2B2;">[65ms]</span></span></span>
+<span><span class="co">#&gt; <span style="color: #00BB00;">✔</span> Extracting predictor information for <span style="color: #00BB00;">absence/background</span> locations <span style="color: #B2B2B2;">[64ms]</span></span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="va">training_set</span><span class="op">=</span><span class="fu">SDMtune</span><span class="fu">::</span><span class="fu"><a href="https://consbiol-unibern.github.io/SDMtune/reference/addSamplesToBg.html" class="external-link">addSamplesToBg</a></span><span class="op">(</span><span class="va">training_set</span><span class="op">)</span></span>
 <span></span>
@@ -820,11 +820,11 @@ independent-testing locations.</p>
 <span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Extracting predictor information for <span style="color: #00BB00;">presence</span> locations</span></span>
 <span><span class="co">#&gt; Warning: <span style="color: #BBBB00;">!</span> <span style="color: #0000BB;">613</span> locations are NA for some environmental</span></span>
 <span><span class="co">#&gt; variables and have been discarded</span></span>
-<span><span class="co">#&gt; <span style="color: #00BB00;">✔</span> Extracting predictor information for <span style="color: #00BB00;">presence</span> locations <span style="color: #B2B2B2;">[25ms]</span></span></span>
+<span><span class="co">#&gt; <span style="color: #00BB00;">✔</span> Extracting predictor information for <span style="color: #00BB00;">presence</span> locations <span style="color: #B2B2B2;">[26ms]</span></span></span>
 <span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Extracting predictor information for <span style="color: #00BB00;">absence/background</span> locations</span></span>
 <span><span class="co">#&gt; Warning: <span style="color: #BBBB00;">!</span> <span style="color: #0000BB;">8890</span> locations are NA for some environmental variables and have been</span></span>
 <span><span class="co">#&gt;   discarded</span></span>
-<span><span class="co">#&gt; <span style="color: #00BB00;">✔</span> Extracting predictor information for <span style="color: #00BB00;">absence/background</span> locations <span style="color: #B2B2B2;">[51ms]</span></span></span>
+<span><span class="co">#&gt; <span style="color: #00BB00;">✔</span> Extracting predictor information for <span style="color: #00BB00;">absence/background</span> locations <span style="color: #B2B2B2;">[50ms]</span></span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="va">testing_set</span><span class="op">=</span><span class="fu">SDMtune</span><span class="fu">::</span><span class="fu"><a href="https://consbiol-unibern.github.io/SDMtune/reference/addSamplesToBg.html" class="external-link">addSamplesToBg</a></span><span class="op">(</span><span class="va">testing_set</span><span class="op">)</span></span></code></pre></div>
 <p>Fit the model using presences (<code>1</code>) and background
@@ -951,7 +951,7 @@ complexity.</p>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; *** Running ENMeval v2.0.6 with maxnet from maxnet package v0.1.4 ***</span></span>
 <span><span class="co">#&gt;   |                                                                              |                                                                      |   0%  |                                                                              |========                                                              |  11%  |                                                                              |================                                                      |  22%  |                                                                              |=======================                                               |  33%  |                                                                              |===============================                                       |  44%  |                                                                              |=======================================                               |  56%  |                                                                              |===============================================                       |  67%  |                                                                              |======================================================                |  78%  |                                                                              |==============================================================        |  89%  |                                                                              |======================================================================| 100%</span></span>
-<span><span class="co">#&gt; ENMevaluate completed in 0 minutes 10.4 seconds.</span></span></code></pre></div>
+<span><span class="co">#&gt; ENMevaluate completed in 0 minutes 10.1 seconds.</span></span></code></pre></div>
 <p>The argument <code>user.eval = tss_user_eval</code> adds TSS as a
 custom evaluation metric. For every cross-validation fold,
 <code>ENMeval</code> supplies predictions for training occurrences,
