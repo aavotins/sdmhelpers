@@ -175,14 +175,60 @@ screen_egv_variance <- function(
     stop("`sd_tol` must be one finite, non-negative number.")
   }
 
-  if (length(env_sample_n) != 1L ||
-      !is.numeric(env_sample_n) ||
-      !is.finite(env_sample_n) ||
-      env_sample_n < 2) {
+  if (
+    !is.numeric(env_sample_n) ||
+    length(env_sample_n) != 1L ||
+    is.na(env_sample_n) ||
+    !is.finite(env_sample_n) ||
+    env_sample_n < 2 ||
+    env_sample_n != floor(env_sample_n)
+  ) {
     stop("`env_sample_n` must be an integer >= 2.")
   }
 
   env_sample_n <- as.integer(env_sample_n)
+
+
+  if (!is.null(seed)) {
+    if (
+      !is.numeric(seed) ||
+      length(seed) != 1L ||
+      is.na(seed) ||
+      !is.finite(seed) ||
+      seed != floor(seed)
+    ) {
+      stop(
+        "`seed` must be NULL or one finite integer.",
+        call. = FALSE
+      )
+    }
+  }
+
+  if (
+    !is.logical(include_test_bg) ||
+    length(include_test_bg) != 1L ||
+    is.na(include_test_bg)
+  ) {
+    ...
+  }
+
+  if (
+    !is.logical(check_test) ||
+    length(check_test) != 1L ||
+    is.na(check_test)
+  ) {
+    ...
+  }
+
+  if (
+    !is.logical(verbose) ||
+    length(verbose) != 1L ||
+    is.na(verbose)
+  ) {
+    ...
+  }
+
+
 
   # ---- Extract training data ----
 

@@ -224,6 +224,19 @@ kde_surface <- function(
 ) {
   normalize <- match.arg(normalize)
 
+  # Validate engine
+  if (
+    !is.character(engine) ||
+    length(engine) != 1L ||
+    is.na(engine) ||
+    !(engine %in% c("auto", "fft", "cpp"))
+  ) {
+    stop(
+      "`engine` must be one of 'auto', 'fft', or 'cpp'.",
+      call. = FALSE
+    )
+  }
+
   # --- checks ---
 
   if (!inherits(ref, "SpatRaster")) {
@@ -292,14 +305,33 @@ kde_surface <- function(
   # --- weights ---
 
   if (!is.null(weight_field)) {
+
+    # Validate weight_field
+    if (
+      !is.character(weight_field) ||
+      length(weight_field) != 1L ||
+      is.na(weight_field) ||
+      !nzchar(weight_field)
+    ) {
+      stop(
+        "`weight_field` must be NULL or one non-empty character string.",
+        call. = FALSE
+      )
+    }
+
     if (!inherits(x, "sf")) {
       x <- sf::st_as_sf(x)
     }
 
+    # Check that the column exists
     if (!weight_field %in% names(x)) {
-      stop("`weight_field` not found in `x`.", call. = FALSE)
+      stop(
+        "`weight_field` not found in `x`.",
+        call. = FALSE
+      )
     }
 
+    # Extract and validate point weights
     w <- x[[weight_field]]
 
     if (
@@ -312,9 +344,14 @@ kde_surface <- function(
         call. = FALSE
       )
     }
+
   } else {
+
+    # Assign equal weights when no weight field is supplied
     w <- rep(1, nrow(sf::st_as_sf(x)))
+
   }
+
 
   # --- rasterize (sum weights per cell) ---
 
