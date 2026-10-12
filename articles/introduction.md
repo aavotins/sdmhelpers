@@ -781,12 +781,12 @@ train_swd <- SDMtune::prepareSWD(
 #> ℹ Extracting predictor information for presence locations
 #> Warning: ! 2009 locations are NA for some environmental variables and have been
 #>   discarded
-#> ✔ Extracting predictor information for presence locations [29ms]
+#> ✔ Extracting predictor information for presence locations [35ms]
 #> 
 #> ℹ Extracting predictor information for absence/background locations
 #> Warning: ! 4761 locations are NA for some environmental variables and have been
 #>   discarded
-#> ✔ Extracting predictor information for absence/background locations [91ms]
+#> ✔ Extracting predictor information for absence/background locations [120ms]
 #> 
 ```
 
@@ -846,12 +846,12 @@ training_set <- SDMtune::prepareSWD(
 #> ℹ Extracting predictor information for presence locations
 #> Warning: ! 2009 locations are NA for some environmental variables and have been
 #>   discarded
-#> ✔ Extracting predictor information for presence locations [17ms]
+#> ✔ Extracting predictor information for presence locations [21ms]
 #> 
 #> ℹ Extracting predictor information for absence/background locations
 #> Warning: ! 28679 locations are NA for some environmental variables and have been
 #>   discarded
-#> ✔ Extracting predictor information for absence/background locations [41ms]
+#> ✔ Extracting predictor information for absence/background locations [52ms]
 #> 
 training_set=SDMtune::addSamplesToBg(training_set)
 
@@ -864,11 +864,11 @@ testing_set <- SDMtune::prepareSWD(
 #> ℹ Extracting predictor information for presence locations
 #> Warning: ! 613 locations are NA for some environmental
 #> variables and have been discarded
-#> ✔ Extracting predictor information for presence locations [16ms]
+#> ✔ Extracting predictor information for presence locations [20ms]
 #> ℹ Extracting predictor information for absence/background locations
 #> Warning: ! 8890 locations are NA for some environmental variables and have been
 #>   discarded
-#> ✔ Extracting predictor information for absence/background locations [31ms]
+#> ✔ Extracting predictor information for absence/background locations [40ms]
 #> 
 testing_set=SDMtune::addSamplesToBg(testing_set)
 ```
@@ -1014,7 +1014,7 @@ pirmais <- ENMeval::ENMevaluate(occs = presences,
 #> 
 #> *** Running ENMeval v2.0.6 with maxnet from maxnet package v0.1.4 ***
 #>   |                                                                              |                                                                      |   0%  |                                                                              |========                                                              |  11%  |                                                                              |================                                                      |  22%  |                                                                              |=======================                                               |  33%  |                                                                              |===============================                                       |  44%  |                                                                              |=======================================                               |  56%  |                                                                              |===============================================                       |  67%  |                                                                              |======================================================                |  78%  |                                                                              |==============================================================        |  89%  |                                                                              |======================================================================| 100%
-#> ENMevaluate completed in 0 minutes 6.7 seconds.
+#> ENMevaluate completed in 0 minutes 8.5 seconds.
 ```
 
 The argument `user.eval = tss_user_eval` adds TSS as a custom evaluation
