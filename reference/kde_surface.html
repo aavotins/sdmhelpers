@@ -93,7 +93,9 @@ in metres, <code>sigma = 3000</code> represents a bandwidth of 3000 metres.</p><
 
 <dt id="arg-ref">ref<a class="anchor" aria-label="anchor" href="#arg-ref"></a></dt>
 <dd><p>A <code><a href="https://rspatial.github.io/terra/reference/SpatRaster-class.html" class="external-link">terra::SpatRaster</a></code> defining the extent, resolution, origin,
-dimensions, and coordinate reference system of the output raster.</p></dd>
+dimensions, and coordinate reference system of the output raster.
+The raster must have square cells (equal x and y resolution) because
+<code>fastfocal</code> uses one cell size when constructing its Gaussian kernel.</p></dd>
 
 
 <dt id="arg-normalize">normalize<a class="anchor" aria-label="anchor" href="#arg-normalize"></a></dt>
@@ -101,7 +103,9 @@ dimensions, and coordinate reference system of the output raster.</p></dd>
 <p><code>"none"</code> returns the Gaussian-smoothed rasterized counts or weight sums
 without additional post-smoothing scaling.</p>
 <p><code>"pdf"</code> divides the smoothed surface by its raster integral so that it
-integrates to approximately 1 over its non-missing support. Values have
+integrates to approximately 1 over its non-missing support. The returned
+relative surface therefore has mean 1 and may be useful as an effort,
+availability, or sampling-bias layer. Values have
 units of inverse map-area units, such as per square metre when the raster
 coordinate units are metres.</p>
 <p><code>"intensity"</code> divides the smoothed values by raster-cell area. For
@@ -120,10 +124,9 @@ calculated over the retained raster footprint.</p></dd>
 
 
 <dt id="arg-engine">engine<a class="anchor" aria-label="anchor" href="#arg-engine"></a></dt>
-<dd><p>Character string passed to the <code>engine</code> argument of
-<code><a href="https://hoyiwan.github.io/fastfocal/reference/fastfocal.html" class="external-link">fastfocal::fastfocal()</a></code>. Common options include <code>"auto"</code>, <code>"fft"</code>, and
-<code>"cpp"</code>, depending on the installed version of <code>fastfocal</code>. The default,
-<code>"auto"</code>, allows <code>fastfocal</code> to select an appropriate backend.</p></dd>
+<dd><p>Character string specifying the <code>fastfocal</code> backend.
+Must be one of <code>"auto"</code>, <code>"fft"</code>, or <code>"cpp"</code>. The default, <code>"auto"</code>,
+lets <code>fastfocal</code> choose the backend.</p></dd>
 
 </dl></div>
     <div class="section level2">
@@ -159,19 +162,22 @@ differ from continuous-coordinate KDE estimators when the bandwidth is small
 relative to raster-cell size.</p>
 <p>The function assumes that <code>x</code> and <code>ref</code> use the same coordinate reference
 system. Points outside the extent of <code>ref</code> do not contribute to the output.</p>
-<p>Cell area is calculated as <code>prod(terra::res(ref))</code>. Therefore, <code>"pdf"</code> and
-<code>"intensity"</code> assume a regular projected raster with linear coordinate
-units. These normalizations should generally not be used with
-longitude-latitude rasters because cell area varies spatially.</p>
+<p>Cell area is calculated as <code>prod(terra::res(ref))</code>. A projected CRS
+with linear coordinate units and square raster cells are required. The
+Gaussian kernel implemented by <code>fastfocal</code> assumes equal x and y
+resolution; longitude-latitude rasters are not supported.</p>
 <p>Masking is performed after Gaussian smoothing. Consequently, the mask
 determines which cells are retained and included in normalization, but it
 does not prevent smoothing across internal <code>NA</code> boundaries in <code>ref</code>.</p>
 <p>Gaussian kernels near the raster extent may lose part of their mass because
 the kernel extends beyond the output grid. The <code>"pdf"</code> option renormalizes
 the retained surface so that its raster integral is approximately 1.</p>
-<p>For <code>"pdf"</code> and <code>"meanG"</code> normalization, the input should contain at least
-one point with a nonzero effective weight inside the extent of <code>ref</code>.
-Otherwise, the normalization denominator may be zero or non-finite.</p>
+<p><code>"pdf"</code> and <code>"meanG"</code> normalization require a positive, finite
+denominator after masking (if requested). If the retained KDE has
+non-positive or non-finite total mass or global mean, respectively,
+the function raises an error instead of dividing by that denominator.
+In practice, points must contribute sufficient effective weight within
+the retained output footprint.</p>
 <p>Negative weights are permitted by the current input checks, but they can
 produce negative raster values and may invalidate probability-density or
 relative-bias interpretations.</p>

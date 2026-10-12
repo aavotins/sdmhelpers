@@ -781,12 +781,12 @@ train_swd <- SDMtune::prepareSWD(
 #> ℹ Extracting predictor information for presence locations
 #> Warning: ! 2009 locations are NA for some environmental variables and have been
 #>   discarded
-#> ✔ Extracting predictor information for presence locations [35ms]
+#> ✔ Extracting predictor information for presence locations [45ms]
 #> 
 #> ℹ Extracting predictor information for absence/background locations
 #> Warning: ! 4761 locations are NA for some environmental variables and have been
 #>   discarded
-#> ✔ Extracting predictor information for absence/background locations [120ms]
+#> ✔ Extracting predictor information for absence/background locations [155ms]
 #> 
 ```
 
@@ -816,13 +816,20 @@ reason for every evaluated predictor/subset combination.
 ``` r
 
 head(variance_screen$diagnostics)
-#>      check    subset variable n_finite        sd failed reason
-#> 1 training       all  egv_280      314 1.7145963  FALSE passed
-#> 2 training       all  egv_293      314 2.0859101  FALSE passed
-#> 3 training       all  egv_302      314 1.5297335  FALSE passed
-#> 4 training       all  egv_385      314 0.7250362  FALSE passed
-#> 5 training       all  egv_400      314 0.8009791  FALSE passed
-#> 6 training presences  egv_280       75 1.5562103  FALSE passed
+#>      check subset data_source      group fold used_for_selection variable
+#> 1 training    all    training  presences <NA>               TRUE  egv_280
+#> 2 training    all    training  presences <NA>               TRUE  egv_293
+#> 3 training    all    training  presences <NA>               TRUE  egv_302
+#> 4 training    all    training  presences <NA>               TRUE  egv_385
+#> 5 training    all    training  presences <NA>               TRUE  egv_400
+#> 6 training    all    training background <NA>               TRUE  egv_280
+#>   n_finite        sd failed reason
+#> 1       75 1.5562103  FALSE passed
+#> 2       75 1.8404706  FALSE passed
+#> 3       75 1.1651248  FALSE passed
+#> 4       75 0.4201842  FALSE passed
+#> 5       75 0.4363026  FALSE passed
+#> 6      239 1.5235595  FALSE passed
 ```
 
 ## Fitting a small maxnet model
@@ -846,12 +853,12 @@ training_set <- SDMtune::prepareSWD(
 #> ℹ Extracting predictor information for presence locations
 #> Warning: ! 2009 locations are NA for some environmental variables and have been
 #>   discarded
-#> ✔ Extracting predictor information for presence locations [21ms]
+#> ✔ Extracting predictor information for presence locations [26ms]
 #> 
 #> ℹ Extracting predictor information for absence/background locations
 #> Warning: ! 28679 locations are NA for some environmental variables and have been
 #>   discarded
-#> ✔ Extracting predictor information for absence/background locations [52ms]
+#> ✔ Extracting predictor information for absence/background locations [65ms]
 #> 
 training_set=SDMtune::addSamplesToBg(training_set)
 
@@ -864,11 +871,11 @@ testing_set <- SDMtune::prepareSWD(
 #> ℹ Extracting predictor information for presence locations
 #> Warning: ! 613 locations are NA for some environmental
 #> variables and have been discarded
-#> ✔ Extracting predictor information for presence locations [20ms]
+#> ✔ Extracting predictor information for presence locations [25ms]
 #> ℹ Extracting predictor information for absence/background locations
 #> Warning: ! 8890 locations are NA for some environmental variables and have been
 #>   discarded
-#> ✔ Extracting predictor information for absence/background locations [40ms]
+#> ✔ Extracting predictor information for absence/background locations [51ms]
 #> 
 testing_set=SDMtune::addSamplesToBg(testing_set)
 ```
@@ -1014,7 +1021,7 @@ pirmais <- ENMeval::ENMevaluate(occs = presences,
 #> 
 #> *** Running ENMeval v2.0.6 with maxnet from maxnet package v0.1.4 ***
 #>   |                                                                              |                                                                      |   0%  |                                                                              |========                                                              |  11%  |                                                                              |================                                                      |  22%  |                                                                              |=======================                                               |  33%  |                                                                              |===============================                                       |  44%  |                                                                              |=======================================                               |  56%  |                                                                              |===============================================                       |  67%  |                                                                              |======================================================                |  78%  |                                                                              |==============================================================        |  89%  |                                                                              |======================================================================| 100%
-#> ENMevaluate completed in 0 minutes 8.5 seconds.
+#> ENMevaluate completed in 0 minutes 10.4 seconds.
 ```
 
 The argument `user.eval = tss_user_eval` adds TSS as a custom evaluation
@@ -1065,15 +1072,15 @@ statistics and can be inspected with:
 
 ENMeval::eval.results(pirmais)
 #>   fc  rm    tune.args auc.train cbi.train auc.diff.avg auc.diff.sd auc.val.avg
-#> 1  L 0.5  fc.L_rm.0.5 0.8714644        NA   0.07945517 0.022225244   0.8265177
-#> 2  Q 0.5  fc.Q_rm.0.5 0.8733380        NA   0.07111489 0.049356734   0.8213454
-#> 3 LQ 0.5 fc.LQ_rm.0.5 0.8911808        NA   0.06290713 0.033151576   0.8538288
-#> 4  L 1.0    fc.L_rm.1 0.8714923        NA   0.07545160 0.013408658   0.8314957
+#> 1  L 0.5  fc.L_rm.0.5 0.8714644        NA   0.07945571 0.022225179   0.8265177
+#> 2  Q 0.5  fc.Q_rm.0.5 0.8733380        NA   0.07111201 0.049360782   0.8213454
+#> 3 LQ 0.5 fc.LQ_rm.0.5 0.8911901        NA   0.06291696 0.033143431   0.8538288
+#> 4  L 1.0    fc.L_rm.1 0.8714923        NA   0.07545736 0.013420158   0.8314957
 #> 5  Q 1.0    fc.Q_rm.1 0.8733705        NA   0.07406087 0.043186846   0.8354066
-#> 6 LQ 1.0   fc.LQ_rm.1 0.8910181        NA   0.06465808 0.027427198   0.8523159
+#> 6 LQ 1.0   fc.LQ_rm.1 0.8910181        NA   0.06465631 0.027427750   0.8523159
 #> 7  L 2.0    fc.L_rm.2 0.8714086        NA   0.06784453 0.002873099   0.8394832
-#> 8  Q 2.0    fc.Q_rm.2 0.8728591        NA   0.07261047 0.043548790   0.8340900
-#> 9 LQ 2.0   fc.LQ_rm.2 0.8893073        NA   0.06882316 0.019308799   0.8475699
+#> 8  Q 2.0    fc.Q_rm.2 0.8728591        NA   0.07260982 0.043543630   0.8340900
+#> 9 LQ 2.0   fc.LQ_rm.2 0.8893073        NA   0.06888881 0.019434704   0.8475060
 #>   auc.val.sd cbi.val.avg cbi.val.sd or.10p.avg  or.10p.sd or.mtp.avg  or.mtp.sd
 #> 1 0.06515442          NA         NA  0.1725146 0.20266343 0.02631579 0.03038686
 #> 2 0.06393752          NA         NA  0.1600877 0.08605885 0.02631579 0.03038686
@@ -1083,7 +1090,7 @@ ENMeval::eval.results(pirmais)
 #> 6 0.05359382          NA         NA  0.1586257 0.21004351 0.02631579 0.03038686
 #> 7 0.05489059          NA         NA  0.1461988 0.15069121 0.01315789 0.02631579
 #> 8 0.06719898          NA         NA  0.1337719 0.05425139 0.01315789 0.02631579
-#> 9 0.05741302          NA         NA  0.1593567 0.17662852 0.01315789 0.02631579
+#> 9 0.05747581          NA         NA  0.1593567 0.17662852 0.01315789 0.02631579
 #>   sens.val.avg sens.val.sd spec.val.avg spec.val.sd thr.val.avg thr.val.sd
 #> 1    0.7733918  0.10818713    0.8029094  0.12455619   0.4409865  0.2682956
 #> 2    0.8004386  0.11579280    0.8009088  0.09314715   0.3590680  0.2133038
@@ -1125,18 +1132,18 @@ ENMeval::eval.results.partitions(pirmais)
 #>       tune.args fold   auc.val   auc.diff cbi.val     or.mtp     or.10p
 #> 1   fc.L_rm.0.5    1 0.8137455 0.06758341      NA 0.05263158 0.05263158
 #> 2   fc.L_rm.0.5    2 0.7601151 0.11275353      NA 0.05263158 0.47368421
-#> 3   fc.L_rm.0.5    3 0.8159626 0.06759836      NA 0.00000000 0.05263158
-#> 4   fc.L_rm.0.5    4 0.9162476 0.06988538      NA 0.00000000 0.11111111
+#> 3   fc.L_rm.0.5    3 0.8159626 0.06759129      NA 0.00000000 0.05263158
+#> 4   fc.L_rm.0.5    4 0.9162476 0.06989459      NA 0.00000000 0.11111111
 #> 5   fc.Q_rm.0.5    1 0.7478283 0.13250706      NA 0.05263158 0.05263158
-#> 6   fc.Q_rm.0.5    2 0.8356908 0.01909032      NA 0.05263158 0.26315789
+#> 6   fc.Q_rm.0.5    2 0.8356908 0.01907880      NA 0.05263158 0.26315789
 #> 7   fc.Q_rm.0.5    3 0.8014197 0.08629100      NA 0.00000000 0.15789474
 #> 8   fc.Q_rm.0.5    4 0.9004430 0.04657120      NA 0.00000000 0.16666667
 #> 9  fc.LQ_rm.0.5    1 0.7976495 0.11064213      NA 0.05263158 0.10526316
-#> 10 fc.LQ_rm.0.5    2 0.8462993 0.03538269      NA 0.05263158 0.52631579
-#> 11 fc.LQ_rm.0.5    3 0.8447022 0.05812269      NA 0.00000000 0.05263158
-#> 12 fc.LQ_rm.0.5    4 0.9266643 0.04748102      NA 0.00000000 0.05555556
+#> 10 fc.LQ_rm.0.5    2 0.8462993 0.03540573      NA 0.05263158 0.52631579
+#> 11 fc.LQ_rm.0.5    3 0.8447022 0.05812976      NA 0.00000000 0.05263158
+#> 12 fc.LQ_rm.0.5    4 0.9266643 0.04749023      NA 0.00000000 0.05555556
 #> 13    fc.L_rm.1    1 0.8127236 0.06845567      NA 0.05263158 0.05263158
-#> 14    fc.L_rm.1    2 0.7780428 0.09552867      NA 0.05263158 0.42105263
+#> 14    fc.L_rm.1    2 0.7780428 0.09555171      NA 0.05263158 0.42105263
 #> 15    fc.L_rm.1    3 0.8156163 0.06796583      NA 0.00000000 0.05263158
 #> 16    fc.L_rm.1    4 0.9196001 0.06985625      NA 0.00000000 0.11111111
 #> 17    fc.Q_rm.1    1 0.7514052 0.12973318      NA 0.05263158 0.05263158
@@ -1145,19 +1152,19 @@ ENMeval::eval.results.partitions(pirmais)
 #> 20    fc.Q_rm.1    4 0.8996049 0.04643335      NA 0.00000000 0.16666667
 #> 21   fc.LQ_rm.1    1 0.8019928 0.10503296      NA 0.05263158 0.05263158
 #> 22   fc.LQ_rm.1    2 0.8352796 0.04556141      NA 0.05263158 0.47368421
-#> 23   fc.LQ_rm.1    3 0.8440097 0.05823553      NA 0.00000000 0.05263158
+#> 23   fc.LQ_rm.1    3 0.8440097 0.05822846      NA 0.00000000 0.05263158
 #> 24   fc.LQ_rm.1    4 0.9279813 0.04980242      NA 0.00000000 0.05555556
 #> 25    fc.L_rm.2    1 0.8111906 0.06934893      NA 0.05263158 0.05263158
 #> 26    fc.L_rm.2    2 0.8059211 0.06752365      NA 0.00000000 0.36842105
 #> 27    fc.L_rm.2    3 0.8194252 0.06395902      NA 0.00000000 0.05263158
 #> 28    fc.L_rm.2    4 0.9213961 0.07054652      NA 0.00000000 0.11111111
 #> 29    fc.Q_rm.2    1 0.7554931 0.12778216      NA 0.05263158 0.05263158
-#> 30    fc.Q_rm.2    2 0.8822368 0.03032440      NA 0.00000000 0.15789474
-#> 31    fc.Q_rm.2    3 0.8014197 0.08584563      NA 0.00000000 0.15789474
+#> 30    fc.Q_rm.2    2 0.8822368 0.03033592      NA 0.00000000 0.15789474
+#> 31    fc.Q_rm.2    3 0.8014197 0.08583149      NA 0.00000000 0.15789474
 #> 32    fc.Q_rm.2    4 0.8972102 0.04648970      NA 0.00000000 0.16666667
-#> 33   fc.LQ_rm.2    1 0.8053143 0.09756031      NA 0.05263158 0.05263158
+#> 33   fc.LQ_rm.2    1 0.8050588 0.09781580      NA 0.05263158 0.05263158
 #> 34   fc.LQ_rm.2    2 0.8162007 0.05982469      NA 0.00000000 0.42105263
-#> 35   fc.LQ_rm.2    3 0.8374307 0.06185949      NA 0.00000000 0.05263158
+#> 35   fc.LQ_rm.2    3 0.8374307 0.06186656      NA 0.00000000 0.05263158
 #> 36   fc.LQ_rm.2    4 0.9313338 0.05604817      NA 0.00000000 0.11111111
 #>      tss.val    thr.val  sens.val  spec.val tss.train
 #> 1  0.5840572 0.41914114 0.8947368 0.6893204 0.6287021

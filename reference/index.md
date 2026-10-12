@@ -28,7 +28,7 @@
 ## Variable screening
 
 - [`screen_egv_variance()`](https://aavotins.github.io/sdmhelpers/reference/screen_egv_variance.md)
-  : Screen Environmental Predictors for Zero Variance
+  : Screen environmental predictors for insufficient variance
 
 ## Spatial kernel density estimation
 

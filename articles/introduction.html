@@ -740,12 +740,12 @@ is used to construct an <code><a href="https://consbiol-unibern.github.io/SDMtun
 <span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Extracting predictor information for <span style="color: #00BB00;">presence</span> locations</span></span>
 <span><span class="co">#&gt; Warning: <span style="color: #BBBB00;">!</span> <span style="color: #0000BB;">2009</span> locations are NA for some environmental variables and have been</span></span>
 <span><span class="co">#&gt;   discarded</span></span>
-<span><span class="co">#&gt; <span style="color: #00BB00;">✔</span> Extracting predictor information for <span style="color: #00BB00;">presence</span> locations <span style="color: #B2B2B2;">[35ms]</span></span></span>
+<span><span class="co">#&gt; <span style="color: #00BB00;">✔</span> Extracting predictor information for <span style="color: #00BB00;">presence</span> locations <span style="color: #B2B2B2;">[45ms]</span></span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Extracting predictor information for <span style="color: #00BB00;">absence/background</span> locations</span></span>
 <span><span class="co">#&gt; Warning: <span style="color: #BBBB00;">!</span> <span style="color: #0000BB;">4761</span> locations are NA for some environmental variables and have been</span></span>
 <span><span class="co">#&gt;   discarded</span></span>
-<span><span class="co">#&gt; <span style="color: #00BB00;">✔</span> Extracting predictor information for <span style="color: #00BB00;">absence/background</span> locations <span style="color: #B2B2B2;">[120ms]</span></span></span>
+<span><span class="co">#&gt; <span style="color: #00BB00;">✔</span> Extracting predictor information for <span style="color: #00BB00;">absence/background</span> locations <span style="color: #B2B2B2;">[155ms]</span></span></span>
 <span><span class="co">#&gt; </span></span></code></pre></div>
 <p>The environmental-domain check is added by supplying
 <code>env</code>.</p>
@@ -768,13 +768,20 @@ is used to construct an <code><a href="https://consbiol-unibern.github.io/SDMtun
 failure reason for every evaluated predictor/subset combination.</p>
 <div class="sourceCode" id="cb27"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rspatial.github.io/terra/reference/headtail.html" class="external-link">head</a></span><span class="op">(</span><span class="va">variance_screen</span><span class="op">$</span><span class="va">diagnostics</span><span class="op">)</span></span>
-<span><span class="co">#&gt;      check    subset variable n_finite        sd failed reason</span></span>
-<span><span class="co">#&gt; 1 training       all  egv_280      314 1.7145963  FALSE passed</span></span>
-<span><span class="co">#&gt; 2 training       all  egv_293      314 2.0859101  FALSE passed</span></span>
-<span><span class="co">#&gt; 3 training       all  egv_302      314 1.5297335  FALSE passed</span></span>
-<span><span class="co">#&gt; 4 training       all  egv_385      314 0.7250362  FALSE passed</span></span>
-<span><span class="co">#&gt; 5 training       all  egv_400      314 0.8009791  FALSE passed</span></span>
-<span><span class="co">#&gt; 6 training presences  egv_280       75 1.5562103  FALSE passed</span></span></code></pre></div>
+<span><span class="co">#&gt;      check subset data_source      group fold used_for_selection variable</span></span>
+<span><span class="co">#&gt; 1 training    all    training  presences &lt;NA&gt;               TRUE  egv_280</span></span>
+<span><span class="co">#&gt; 2 training    all    training  presences &lt;NA&gt;               TRUE  egv_293</span></span>
+<span><span class="co">#&gt; 3 training    all    training  presences &lt;NA&gt;               TRUE  egv_302</span></span>
+<span><span class="co">#&gt; 4 training    all    training  presences &lt;NA&gt;               TRUE  egv_385</span></span>
+<span><span class="co">#&gt; 5 training    all    training  presences &lt;NA&gt;               TRUE  egv_400</span></span>
+<span><span class="co">#&gt; 6 training    all    training background &lt;NA&gt;               TRUE  egv_280</span></span>
+<span><span class="co">#&gt;   n_finite        sd failed reason</span></span>
+<span><span class="co">#&gt; 1       75 1.5562103  FALSE passed</span></span>
+<span><span class="co">#&gt; 2       75 1.8404706  FALSE passed</span></span>
+<span><span class="co">#&gt; 3       75 1.1651248  FALSE passed</span></span>
+<span><span class="co">#&gt; 4       75 0.4201842  FALSE passed</span></span>
+<span><span class="co">#&gt; 5       75 0.4363026  FALSE passed</span></span>
+<span><span class="co">#&gt; 6      239 1.5235595  FALSE passed</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="fitting-a-small-maxnet-model">Fitting a small maxnet model<a class="anchor" aria-label="anchor" href="#fitting-a-small-maxnet-model"></a>
@@ -795,12 +802,12 @@ independent-testing locations.</p>
 <span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Extracting predictor information for <span style="color: #00BB00;">presence</span> locations</span></span>
 <span><span class="co">#&gt; Warning: <span style="color: #BBBB00;">!</span> <span style="color: #0000BB;">2009</span> locations are NA for some environmental variables and have been</span></span>
 <span><span class="co">#&gt;   discarded</span></span>
-<span><span class="co">#&gt; <span style="color: #00BB00;">✔</span> Extracting predictor information for <span style="color: #00BB00;">presence</span> locations <span style="color: #B2B2B2;">[21ms]</span></span></span>
+<span><span class="co">#&gt; <span style="color: #00BB00;">✔</span> Extracting predictor information for <span style="color: #00BB00;">presence</span> locations <span style="color: #B2B2B2;">[26ms]</span></span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Extracting predictor information for <span style="color: #00BB00;">absence/background</span> locations</span></span>
 <span><span class="co">#&gt; Warning: <span style="color: #BBBB00;">!</span> <span style="color: #0000BB;">28679</span> locations are NA for some environmental variables and have been</span></span>
 <span><span class="co">#&gt;   discarded</span></span>
-<span><span class="co">#&gt; <span style="color: #00BB00;">✔</span> Extracting predictor information for <span style="color: #00BB00;">absence/background</span> locations <span style="color: #B2B2B2;">[52ms]</span></span></span>
+<span><span class="co">#&gt; <span style="color: #00BB00;">✔</span> Extracting predictor information for <span style="color: #00BB00;">absence/background</span> locations <span style="color: #B2B2B2;">[65ms]</span></span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="va">training_set</span><span class="op">=</span><span class="fu">SDMtune</span><span class="fu">::</span><span class="fu"><a href="https://consbiol-unibern.github.io/SDMtune/reference/addSamplesToBg.html" class="external-link">addSamplesToBg</a></span><span class="op">(</span><span class="va">training_set</span><span class="op">)</span></span>
 <span></span>
@@ -813,11 +820,11 @@ independent-testing locations.</p>
 <span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Extracting predictor information for <span style="color: #00BB00;">presence</span> locations</span></span>
 <span><span class="co">#&gt; Warning: <span style="color: #BBBB00;">!</span> <span style="color: #0000BB;">613</span> locations are NA for some environmental</span></span>
 <span><span class="co">#&gt; variables and have been discarded</span></span>
-<span><span class="co">#&gt; <span style="color: #00BB00;">✔</span> Extracting predictor information for <span style="color: #00BB00;">presence</span> locations <span style="color: #B2B2B2;">[20ms]</span></span></span>
+<span><span class="co">#&gt; <span style="color: #00BB00;">✔</span> Extracting predictor information for <span style="color: #00BB00;">presence</span> locations <span style="color: #B2B2B2;">[25ms]</span></span></span>
 <span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Extracting predictor information for <span style="color: #00BB00;">absence/background</span> locations</span></span>
 <span><span class="co">#&gt; Warning: <span style="color: #BBBB00;">!</span> <span style="color: #0000BB;">8890</span> locations are NA for some environmental variables and have been</span></span>
 <span><span class="co">#&gt;   discarded</span></span>
-<span><span class="co">#&gt; <span style="color: #00BB00;">✔</span> Extracting predictor information for <span style="color: #00BB00;">absence/background</span> locations <span style="color: #B2B2B2;">[40ms]</span></span></span>
+<span><span class="co">#&gt; <span style="color: #00BB00;">✔</span> Extracting predictor information for <span style="color: #00BB00;">absence/background</span> locations <span style="color: #B2B2B2;">[51ms]</span></span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="va">testing_set</span><span class="op">=</span><span class="fu">SDMtune</span><span class="fu">::</span><span class="fu"><a href="https://consbiol-unibern.github.io/SDMtune/reference/addSamplesToBg.html" class="external-link">addSamplesToBg</a></span><span class="op">(</span><span class="va">testing_set</span><span class="op">)</span></span></code></pre></div>
 <p>Fit the model using presences (<code>1</code>) and background
@@ -944,7 +951,7 @@ complexity.</p>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; *** Running ENMeval v2.0.6 with maxnet from maxnet package v0.1.4 ***</span></span>
 <span><span class="co">#&gt;   |                                                                              |                                                                      |   0%  |                                                                              |========                                                              |  11%  |                                                                              |================                                                      |  22%  |                                                                              |=======================                                               |  33%  |                                                                              |===============================                                       |  44%  |                                                                              |=======================================                               |  56%  |                                                                              |===============================================                       |  67%  |                                                                              |======================================================                |  78%  |                                                                              |==============================================================        |  89%  |                                                                              |======================================================================| 100%</span></span>
-<span><span class="co">#&gt; ENMevaluate completed in 0 minutes 8.5 seconds.</span></span></code></pre></div>
+<span><span class="co">#&gt; ENMevaluate completed in 0 minutes 10.4 seconds.</span></span></code></pre></div>
 <p>The argument <code>user.eval = tss_user_eval</code> adds TSS as a
 custom evaluation metric. For every cross-validation fold,
 <code>ENMeval</code> supplies predictions for training occurrences,
@@ -981,15 +988,15 @@ the fold-level statistics and can be inspected with:</p>
 <div class="sourceCode" id="cb35"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">ENMeval</span><span class="fu">::</span><span class="fu"><a href="https://jamiemkass.github.io/ENMeval/reference/eval.results.html" class="external-link">eval.results</a></span><span class="op">(</span><span class="va">pirmais</span><span class="op">)</span></span>
 <span><span class="co">#&gt;   fc  rm    tune.args auc.train cbi.train auc.diff.avg auc.diff.sd auc.val.avg</span></span>
-<span><span class="co">#&gt; 1  L 0.5  fc.L_rm.0.5 0.8714644        NA   0.07945517 0.022225244   0.8265177</span></span>
-<span><span class="co">#&gt; 2  Q 0.5  fc.Q_rm.0.5 0.8733380        NA   0.07111489 0.049356734   0.8213454</span></span>
-<span><span class="co">#&gt; 3 LQ 0.5 fc.LQ_rm.0.5 0.8911808        NA   0.06290713 0.033151576   0.8538288</span></span>
-<span><span class="co">#&gt; 4  L 1.0    fc.L_rm.1 0.8714923        NA   0.07545160 0.013408658   0.8314957</span></span>
+<span><span class="co">#&gt; 1  L 0.5  fc.L_rm.0.5 0.8714644        NA   0.07945571 0.022225179   0.8265177</span></span>
+<span><span class="co">#&gt; 2  Q 0.5  fc.Q_rm.0.5 0.8733380        NA   0.07111201 0.049360782   0.8213454</span></span>
+<span><span class="co">#&gt; 3 LQ 0.5 fc.LQ_rm.0.5 0.8911901        NA   0.06291696 0.033143431   0.8538288</span></span>
+<span><span class="co">#&gt; 4  L 1.0    fc.L_rm.1 0.8714923        NA   0.07545736 0.013420158   0.8314957</span></span>
 <span><span class="co">#&gt; 5  Q 1.0    fc.Q_rm.1 0.8733705        NA   0.07406087 0.043186846   0.8354066</span></span>
-<span><span class="co">#&gt; 6 LQ 1.0   fc.LQ_rm.1 0.8910181        NA   0.06465808 0.027427198   0.8523159</span></span>
+<span><span class="co">#&gt; 6 LQ 1.0   fc.LQ_rm.1 0.8910181        NA   0.06465631 0.027427750   0.8523159</span></span>
 <span><span class="co">#&gt; 7  L 2.0    fc.L_rm.2 0.8714086        NA   0.06784453 0.002873099   0.8394832</span></span>
-<span><span class="co">#&gt; 8  Q 2.0    fc.Q_rm.2 0.8728591        NA   0.07261047 0.043548790   0.8340900</span></span>
-<span><span class="co">#&gt; 9 LQ 2.0   fc.LQ_rm.2 0.8893073        NA   0.06882316 0.019308799   0.8475699</span></span>
+<span><span class="co">#&gt; 8  Q 2.0    fc.Q_rm.2 0.8728591        NA   0.07260982 0.043543630   0.8340900</span></span>
+<span><span class="co">#&gt; 9 LQ 2.0   fc.LQ_rm.2 0.8893073        NA   0.06888881 0.019434704   0.8475060</span></span>
 <span><span class="co">#&gt;   auc.val.sd cbi.val.avg cbi.val.sd or.10p.avg  or.10p.sd or.mtp.avg  or.mtp.sd</span></span>
 <span><span class="co">#&gt; 1 0.06515442          NA         NA  0.1725146 0.20266343 0.02631579 0.03038686</span></span>
 <span><span class="co">#&gt; 2 0.06393752          NA         NA  0.1600877 0.08605885 0.02631579 0.03038686</span></span>
@@ -999,7 +1006,7 @@ the fold-level statistics and can be inspected with:</p>
 <span><span class="co">#&gt; 6 0.05359382          NA         NA  0.1586257 0.21004351 0.02631579 0.03038686</span></span>
 <span><span class="co">#&gt; 7 0.05489059          NA         NA  0.1461988 0.15069121 0.01315789 0.02631579</span></span>
 <span><span class="co">#&gt; 8 0.06719898          NA         NA  0.1337719 0.05425139 0.01315789 0.02631579</span></span>
-<span><span class="co">#&gt; 9 0.05741302          NA         NA  0.1593567 0.17662852 0.01315789 0.02631579</span></span>
+<span><span class="co">#&gt; 9 0.05747581          NA         NA  0.1593567 0.17662852 0.01315789 0.02631579</span></span>
 <span><span class="co">#&gt;   sens.val.avg sens.val.sd spec.val.avg spec.val.sd thr.val.avg thr.val.sd</span></span>
 <span><span class="co">#&gt; 1    0.7733918  0.10818713    0.8029094  0.12455619   0.4409865  0.2682956</span></span>
 <span><span class="co">#&gt; 2    0.8004386  0.11579280    0.8009088  0.09314715   0.3590680  0.2133038</span></span>
@@ -1037,18 +1044,18 @@ the fold-level statistics and can be inspected with:</p>
 <span><span class="co">#&gt;       tune.args fold   auc.val   auc.diff cbi.val     or.mtp     or.10p</span></span>
 <span><span class="co">#&gt; 1   fc.L_rm.0.5    1 0.8137455 0.06758341      NA 0.05263158 0.05263158</span></span>
 <span><span class="co">#&gt; 2   fc.L_rm.0.5    2 0.7601151 0.11275353      NA 0.05263158 0.47368421</span></span>
-<span><span class="co">#&gt; 3   fc.L_rm.0.5    3 0.8159626 0.06759836      NA 0.00000000 0.05263158</span></span>
-<span><span class="co">#&gt; 4   fc.L_rm.0.5    4 0.9162476 0.06988538      NA 0.00000000 0.11111111</span></span>
+<span><span class="co">#&gt; 3   fc.L_rm.0.5    3 0.8159626 0.06759129      NA 0.00000000 0.05263158</span></span>
+<span><span class="co">#&gt; 4   fc.L_rm.0.5    4 0.9162476 0.06989459      NA 0.00000000 0.11111111</span></span>
 <span><span class="co">#&gt; 5   fc.Q_rm.0.5    1 0.7478283 0.13250706      NA 0.05263158 0.05263158</span></span>
-<span><span class="co">#&gt; 6   fc.Q_rm.0.5    2 0.8356908 0.01909032      NA 0.05263158 0.26315789</span></span>
+<span><span class="co">#&gt; 6   fc.Q_rm.0.5    2 0.8356908 0.01907880      NA 0.05263158 0.26315789</span></span>
 <span><span class="co">#&gt; 7   fc.Q_rm.0.5    3 0.8014197 0.08629100      NA 0.00000000 0.15789474</span></span>
 <span><span class="co">#&gt; 8   fc.Q_rm.0.5    4 0.9004430 0.04657120      NA 0.00000000 0.16666667</span></span>
 <span><span class="co">#&gt; 9  fc.LQ_rm.0.5    1 0.7976495 0.11064213      NA 0.05263158 0.10526316</span></span>
-<span><span class="co">#&gt; 10 fc.LQ_rm.0.5    2 0.8462993 0.03538269      NA 0.05263158 0.52631579</span></span>
-<span><span class="co">#&gt; 11 fc.LQ_rm.0.5    3 0.8447022 0.05812269      NA 0.00000000 0.05263158</span></span>
-<span><span class="co">#&gt; 12 fc.LQ_rm.0.5    4 0.9266643 0.04748102      NA 0.00000000 0.05555556</span></span>
+<span><span class="co">#&gt; 10 fc.LQ_rm.0.5    2 0.8462993 0.03540573      NA 0.05263158 0.52631579</span></span>
+<span><span class="co">#&gt; 11 fc.LQ_rm.0.5    3 0.8447022 0.05812976      NA 0.00000000 0.05263158</span></span>
+<span><span class="co">#&gt; 12 fc.LQ_rm.0.5    4 0.9266643 0.04749023      NA 0.00000000 0.05555556</span></span>
 <span><span class="co">#&gt; 13    fc.L_rm.1    1 0.8127236 0.06845567      NA 0.05263158 0.05263158</span></span>
-<span><span class="co">#&gt; 14    fc.L_rm.1    2 0.7780428 0.09552867      NA 0.05263158 0.42105263</span></span>
+<span><span class="co">#&gt; 14    fc.L_rm.1    2 0.7780428 0.09555171      NA 0.05263158 0.42105263</span></span>
 <span><span class="co">#&gt; 15    fc.L_rm.1    3 0.8156163 0.06796583      NA 0.00000000 0.05263158</span></span>
 <span><span class="co">#&gt; 16    fc.L_rm.1    4 0.9196001 0.06985625      NA 0.00000000 0.11111111</span></span>
 <span><span class="co">#&gt; 17    fc.Q_rm.1    1 0.7514052 0.12973318      NA 0.05263158 0.05263158</span></span>
@@ -1057,19 +1064,19 @@ the fold-level statistics and can be inspected with:</p>
 <span><span class="co">#&gt; 20    fc.Q_rm.1    4 0.8996049 0.04643335      NA 0.00000000 0.16666667</span></span>
 <span><span class="co">#&gt; 21   fc.LQ_rm.1    1 0.8019928 0.10503296      NA 0.05263158 0.05263158</span></span>
 <span><span class="co">#&gt; 22   fc.LQ_rm.1    2 0.8352796 0.04556141      NA 0.05263158 0.47368421</span></span>
-<span><span class="co">#&gt; 23   fc.LQ_rm.1    3 0.8440097 0.05823553      NA 0.00000000 0.05263158</span></span>
+<span><span class="co">#&gt; 23   fc.LQ_rm.1    3 0.8440097 0.05822846      NA 0.00000000 0.05263158</span></span>
 <span><span class="co">#&gt; 24   fc.LQ_rm.1    4 0.9279813 0.04980242      NA 0.00000000 0.05555556</span></span>
 <span><span class="co">#&gt; 25    fc.L_rm.2    1 0.8111906 0.06934893      NA 0.05263158 0.05263158</span></span>
 <span><span class="co">#&gt; 26    fc.L_rm.2    2 0.8059211 0.06752365      NA 0.00000000 0.36842105</span></span>
 <span><span class="co">#&gt; 27    fc.L_rm.2    3 0.8194252 0.06395902      NA 0.00000000 0.05263158</span></span>
 <span><span class="co">#&gt; 28    fc.L_rm.2    4 0.9213961 0.07054652      NA 0.00000000 0.11111111</span></span>
 <span><span class="co">#&gt; 29    fc.Q_rm.2    1 0.7554931 0.12778216      NA 0.05263158 0.05263158</span></span>
-<span><span class="co">#&gt; 30    fc.Q_rm.2    2 0.8822368 0.03032440      NA 0.00000000 0.15789474</span></span>
-<span><span class="co">#&gt; 31    fc.Q_rm.2    3 0.8014197 0.08584563      NA 0.00000000 0.15789474</span></span>
+<span><span class="co">#&gt; 30    fc.Q_rm.2    2 0.8822368 0.03033592      NA 0.00000000 0.15789474</span></span>
+<span><span class="co">#&gt; 31    fc.Q_rm.2    3 0.8014197 0.08583149      NA 0.00000000 0.15789474</span></span>
 <span><span class="co">#&gt; 32    fc.Q_rm.2    4 0.8972102 0.04648970      NA 0.00000000 0.16666667</span></span>
-<span><span class="co">#&gt; 33   fc.LQ_rm.2    1 0.8053143 0.09756031      NA 0.05263158 0.05263158</span></span>
+<span><span class="co">#&gt; 33   fc.LQ_rm.2    1 0.8050588 0.09781580      NA 0.05263158 0.05263158</span></span>
 <span><span class="co">#&gt; 34   fc.LQ_rm.2    2 0.8162007 0.05982469      NA 0.00000000 0.42105263</span></span>
-<span><span class="co">#&gt; 35   fc.LQ_rm.2    3 0.8374307 0.06185949      NA 0.00000000 0.05263158</span></span>
+<span><span class="co">#&gt; 35   fc.LQ_rm.2    3 0.8374307 0.06186656      NA 0.00000000 0.05263158</span></span>
 <span><span class="co">#&gt; 36   fc.LQ_rm.2    4 0.9313338 0.05604817      NA 0.00000000 0.11111111</span></span>
 <span><span class="co">#&gt;      tss.val    thr.val  sens.val  spec.val tss.train</span></span>
 <span><span class="co">#&gt; 1  0.5840572 0.41914114 0.8947368 0.6893204 0.6287021</span></span>
