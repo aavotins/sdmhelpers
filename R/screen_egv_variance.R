@@ -1,537 +1,317 @@
-#' Screen Environmental Predictors for Zero Variance
+#' Screen environmental predictors for insufficient variance
 #'
-#' Identifies environmental predictors that have zero or insufficient variance
-#' in data subsets relevant to species distribution model training,
-#' cross-validation, background characterization, and optionally independent
-#' testing.
+#' Calculates predictor standard deviations separately among presences,
+#' background records, and their combination, including spatial CV training
+#' partitions and (optionally) an independent test set.
 #'
-#' @param train An `SWD` object, typically created with
-#'   [SDMtune::prepareSWD()], containing the training presence and
-#'   absence/background records.
-#'
-#' @param test An optional `SWD` object containing independent testing data.
-#'   When supplied, its background records can be included in the pooled
-#'   background variance check. The complete independent testing dataset can
-#'   additionally be checked by setting `check_test = TRUE`.
-#'
-#' @param occ_folds An optional vector giving the cross-validation fold assigned
-#'   to each presence record in `train`. Its length must equal the number of
-#'   presence records in `train`. For each fold, predictor variance is evaluated
-#'   using the presence records belonging to all other folds, corresponding to
-#'   the training partition when that fold is held out.
-#'
-#' @param env An optional [terra::SpatRaster] containing the environmental
-#'   predictors. When supplied, `env_sample_n` random raster cells are sampled
-#'   and predictor variance is evaluated across the sampled environmental
-#'   domain.
-#'
-#' @param env_sample_n Positive integer. Number of cells randomly sampled from
-#'   `env` when `env` is supplied. Defaults to `10000`.
-#'
-#' @param seed Optional integer used for reproducible sampling of `env`.
-#'   The previous state of R's random-number generator is restored before the
-#'   function exits.
-#'
-#' @param sd_tol Non-negative numeric value defining the minimum acceptable
-#'   standard deviation. A predictor is flagged when its standard deviation is
-#'   less than or equal to `sd_tol`. The default, `0`, removes only predictors
-#'   with exactly zero variance, together with predictors for which variance
-#'   cannot be estimated.
-#'
-#' @param include_test_bg Logical. If `TRUE` and `test` is supplied,
-#'   background records from the independent testing dataset are pooled with
-#'   training background records for the background variance check. Defaults
-#'   to `TRUE`.
-#'
-#' @param check_test Logical. If `TRUE`, predictor variance is additionally
-#'   evaluated across all records in the independent testing `SWD` object.
-#'   Defaults to `FALSE`.
-#'
-#' @param verbose Logical. If `TRUE`, print a short summary of the screening
-#'   results. Defaults to `TRUE`.
+#' @param train An `SDMtune` `SWD` object with presence and background data.
+#' @param test An optional independent-test `SWD` object.
+#' @param occ_folds An optional fold identifiers for TRAINING presences, in the
+#'   order of `train@pa == 1`. A held-out fold is excluded in each CV check.
+#' @param bg_folds An optional fold identifiers for TRAINING background records,
+#'   in the order of `train@pa == 0`. If omitted, all training backgrounds are
+#'   reused in every CV partition (and the diagnostics state this explicitly).
+#' @param env An optional `terra::SpatRaster` representing the environmental domain.
+#' @param env_sample_n Whole integer >= 2 for random raster-cell sampling.
+#' @param seed NULL or one non-negative integer for reproducible `env` sampling;
+#'   existing R random-number-generator state is restored.
+#' @param sd_tol Finite non-negative standard-deviation cutoff. Values <=
+#'   `sd_tol`, or fewer than two finite observations, fail a check.
+#' @param check_presences Check presence-only subsets, default TRUE.
+#' @param check_background Check background-only subsets, default TRUE.
+#' @param check_combined Check joined presence/background subsets, default TRUE.
+#' @param presence_affects_selection If FALSE, presence-only failures are
+#'   diagnostic-only. Defaults to TRUE for compatibility with previous screening.
+#' @param include_test_bg Whether to additionally check training and independent
+#'   test backgrounds pooled together. Defaults to FALSE. The pooled check is
+#'   diagnostic-only unless `test_affects_selection = TRUE`.
+#' @param check_test Whether to diagnose the independent test set separately
+#'   (presences/background/combined according to the `check_*` switches).
+#'   Defaults to FALSE. Its checks are diagnostic-only by default.
+#' @param test_affects_selection Explicitly allow checks involving independent
+#'   test records to influence `keep`/`remove`. Defaults to FALSE to avoid
+#'   test-informed preprocessing. Setting TRUE forfeits full test independence.
+#' @param verbose Print a summary (TRUE/FALSE).
 #'
 #' @details
-#' The function is intended as a preprocessing check for environmental
-#' predictors used in species distribution modelling. A predictor is retained
-#' only when it passes every variance check that is requested.
+#' Checks performed on training observations use only `train@data`.
+#' Supplying `env` adds an independent random environmental-domain check; it
+#' does not subsample or modify the supplied background observations.
 #'
-#' By default, the following subsets are evaluated:
+#' CV checks exclude the held-out fold's presences and, when `bg_folds` is
+#' supplied, its background records. Without `bg_folds`, the full training
+#' background is shared across CV partitions. CV checks never inspect `test`.
 #'
-#' \itemize{
-#'   \item all presence and absence/background records in the training data;
-#'   \item all training presence records;
-#'   \item pooled training background records and, when `include_test_bg = TRUE`,
-#'     independent testing background records;
-#'   \item each cross-validation presence training partition when
-#'     `occ_folds` is supplied; and
-#'   \item a random sample of the environmental domain when `env` is supplied.
-#' }
+#' When `check_presences = FALSE`, presence-only checks are omitted entirely.
+#' When `presence_affects_selection = FALSE`, presence-only checks are
+#' performed but do not influence predictor selection.
 #'
-#' For the cross-validation check, the function does not evaluate the records
-#' within a held-out fold alone. For each fold `k`, it evaluates the records for
-#' which `occ_folds != k`. These are the presence records available for model
-#' fitting when fold `k` is used for validation.
+#' Each row in the returned `diagnostics` data frame contains a logical
+#' column named `used_for_selection`. This column indicates whether the
+#' corresponding variance check contributes to predictor selection.
+#' A predictor is included in `remove` if it fails at least one check
+#' for which `used_for_selection` is `TRUE`. Checks marked `FALSE` are
+#' retained for diagnostic purposes but do not influence `keep` or `remove`.
 #'
-#' If `check_test = TRUE`, all records in `test` are also evaluated as a
-#' separate subset.
+#' `test_affects_selection = TRUE` is an explicit opt-in and is generally
+#' inappropriate if `test` is meant as a final independent evaluation set.
+#' Select predictors *within training data for each CV fold* if estimating
+#' the predictive performance of an entire selection/model-fitting pipeline.
 #'
-#' Standard deviations are calculated using finite values only. Predictors
-#' having fewer than two finite observations in a checked subset are flagged
-#' because their variance cannot be estimated.
-#'
-#' Predictor names are taken from `train@data`. The same predictors must be
-#' present in `test@data`, when `test` is supplied, and in `env`, when `env`
-#' is supplied.
-#'
-#' The environmental raster itself is not modified. Instead, the function
-#' returns vectors containing the predictors that passed and failed screening.
-#' These can subsequently be used to subset an environmental-variable table,
-#' an `SWD` object, or a [terra::SpatRaster].
-#'
-#' @return A named list with the following components:
-#'
+#' @return A named list containing:
 #' \describe{
-#'   \item{keep}{
-#'     Character vector containing predictors that passed all requested
-#'     variance checks.
-#'   }
-#'   \item{remove}{
-#'     Character vector containing predictors that failed at least one
-#'     variance check.
-#'   }
-#'   \item{removed_by_check}{
-#'     Named list showing which predictors were flagged by each individual
-#'     check.
-#'   }
-#'   \item{diagnostics}{
-#'     A `data.frame` containing the check, subset, predictor name, number of
-#'     finite observations, standard deviation, failure status, and reason for
-#'     every predictor evaluated.
-#'   }
+#'   \item{keep}{Predictors retained after variance screening.}
+#'   \item{remove}{Predictors excluded by selection-relevant variance checks.}
+#'   \item{removed_by_check}{Predictors removed by each selection-relevant check.}
+#'   \item{diagnostics}{A data frame containing results of all performed
+#'     variance checks, including `failed` and `used_for_selection` logical
+#'     columns. The latter identifies whether each check contributes to
+#'     predictor selection.}
 #' }
 #'
 #' @importClassesFrom SDMtune SWD
-#'
-#' @seealso
-#' [SDMtune::prepareSWD()],
-#' [terra::spatSample()]
-#'
+#' @seealso [SDMtune::prepareSWD()], [terra::spatSample()]
 #' @examples
-#' \dontrun{
-#' result <- screen_egv_variance(
-#'   train = trenin_dati,
-#'   test = testa_dati,
-#'   occ_folds = block_folds$occs.grp,
-#'   env = vide,
-#'   env_sample_n = 10000,
-#'   seed = 1
-#' )
-#'
+#' # Self-contained example with package dependencies, no external files.
+#' r <- terra::rast(nrows = 10, ncols = 10, xmin = 0, xmax = 10,
+#'                  ymin = 0, ymax = 10)
+#' terra::values(r) <- seq_len(terra::ncell(r))
+#' names(r) <- "gradient"
+#' r2 <- r
+#' terra::values(r2) <- rep(seq_len(10), each = 10)
+#' names(r2) <- "stripes"
+#' env <- c(r, r2)
+#' p <- data.frame(x = c(1.5, 3.5, 5.5, 7.5),
+#'                 y = c(1.5, 3.5, 5.5, 7.5))
+#' a <- data.frame(x = c(0.5, 2.5, 4.5, 6.5, 8.5),
+#'                 y = c(8.5, 6.5, 4.5, 2.5, 0.5))
+#' train <- SDMtune::prepareSWD("Example species", env, p = p, a = a,
+#'                              verbose = FALSE)
+#' result <- screen_egv_variance(train, occ_folds = c(1, 1, 2, 2),
+#'                               env = env, env_sample_n = 50,
+#'                               seed = 1, verbose = FALSE)
 #' result$keep
-#' result$remove
-#' result$removed_by_check
-#'
-#' # Retain only predictors passing all checks
-#' videi <- videi[
-#'   videi$layername %in% result$keep,
-#' ]
-#'
-#' vide <- terra::rast(
-#'   paste0(
-#'     "./RasterGrids_100m/2024/Scaled/",
-#'     videi$new_filename
-#'   )
-#' )
-#' }
+#' head(result$diagnostics)
 #'
 #' @export
 screen_egv_variance <- function(
-    train,
-    test = NULL,
-    occ_folds = NULL,
-    env = NULL,
-    env_sample_n = 10000L,
-    seed = NULL,
-    sd_tol = 0,
-    include_test_bg = TRUE,
-    check_test = FALSE,
-    verbose = TRUE
+    train, test = NULL, occ_folds = NULL, bg_folds = NULL, env = NULL,
+    env_sample_n = 10000L, seed = NULL, sd_tol = 0,
+    check_presences = TRUE, check_background = TRUE, check_combined = TRUE,
+    presence_affects_selection = TRUE,
+    include_test_bg = FALSE, check_test = FALSE,
+    test_affects_selection = FALSE, verbose = TRUE
 ) {
-
-  # ---- Validate inputs ----
-
-  if (!methods::is(train, "SWD")) {
-    stop("`train` must be an SDMtune `SWD` object.")
+  fail <- function(...) stop(..., call. = FALSE)
+  flag <- function(x, name) {
+    if (!is.logical(x) || length(x) != 1L || is.na(x)) {
+      fail("`", name, "` must be TRUE or FALSE.")
+    }
   }
-
+  whole_number <- function(x, name, min_value) {
+    if (!is.numeric(x) || length(x) != 1L || !is.finite(x) ||
+        x < min_value || x != floor(x) || x > .Machine$integer.max) {
+      fail("`", name, "` must be a whole integer between ",
+           min_value, " and .Machine$integer.max.")
+    }
+    as.integer(x)
+  }
+  for (nm in c("check_presences", "check_background", "check_combined",
+               "presence_affects_selection", "include_test_bg", "check_test",
+               "test_affects_selection", "verbose")) {
+    flag(get(nm, inherits = FALSE), nm)
+  }
+  if (!any(c(check_presences, check_background, check_combined))) {
+    fail("At least one of `check_presences`, `check_background`, or ",
+         "`check_combined` must be TRUE.")
+  }
+  env_sample_n <- whole_number(env_sample_n, "env_sample_n", 2L)
+  if (!is.null(seed)) seed <- whole_number(seed, "seed", 0L)
+  if (!is.numeric(sd_tol) || length(sd_tol) != 1L ||
+      !is.finite(sd_tol) || sd_tol < 0) {
+    fail("`sd_tol` must be one finite non-negative number.")
+  }
+  if (!methods::is(train, "SWD")) fail("`train` must be an SDMtune `SWD` object.")
   if (!is.null(test) && !methods::is(test, "SWD")) {
-    stop("`test` must be an SDMtune `SWD` object or NULL.")
+    fail("`test` must be an SDMtune `SWD` object or NULL.")
+  }
+  if (check_test && is.null(test)) fail("`check_test = TRUE` requires `test`.")
+  if (include_test_bg && is.null(test)) {
+    fail("`include_test_bg = TRUE` requires `test`.")
+  }
+  if (!is.null(bg_folds) && is.null(occ_folds)) {
+    fail("`bg_folds` requires `occ_folds`.")
   }
 
-  if (length(sd_tol) != 1L ||
-      !is.numeric(sd_tol) ||
-      !is.finite(sd_tol) ||
-      sd_tol < 0) {
-    stop("`sd_tol` must be one finite, non-negative number.")
-  }
-
-  if (length(env_sample_n) != 1L ||
-      !is.numeric(env_sample_n) ||
-      !is.finite(env_sample_n) ||
-      env_sample_n < 2) {
-    stop("`env_sample_n` must be an integer >= 2.")
-  }
-
-  env_sample_n <- as.integer(env_sample_n)
-
-  # ---- Extract training data ----
-
-  train_data <- as.data.frame(methods::slot(train, "data"))
-  train_pa <- methods::slot(train, "pa")
-
-  if (nrow(train_data) != length(train_pa)) {
-    stop("The dimensions of `train@data` and `train@pa` do not agree.")
-  }
-
-  vars <- names(train_data)
-
-  if (length(vars) == 0L) {
-    stop("No environmental predictors were found in `train@data`.")
-  }
-
-  if (anyDuplicated(vars)) {
-    stop("Predictor names in `train@data` must be unique.")
-  }
-
-  is_numeric <- vapply(train_data, is.numeric, logical(1))
-
-  if (!all(is_numeric)) {
-    stop(
-      "All predictors must be numeric. Non-numeric predictors: ",
-      paste(vars[!is_numeric], collapse = ", ")
-    )
-  }
-
-  # ---- Extract testing data ----
-
-  if (!is.null(test)) {
-
-    test_data <- as.data.frame(methods::slot(test, "data"))
-    test_pa <- methods::slot(test, "pa")
-
-    if (nrow(test_data) != length(test_pa)) {
-      stop("The dimensions of `test@data` and `test@pa` do not agree.")
+  extract <- function(obj, name, vars = NULL) {
+    x <- as.data.frame(methods::slot(obj, "data"))
+    pa <- methods::slot(obj, "pa")
+    if (nrow(x) != length(pa)) {
+      fail("Dimensions of `", name, "@data` and `", name, "@pa` disagree.")
     }
-
-    missing_test <- setdiff(vars, names(test_data))
-
-    if (length(missing_test) > 0L) {
-      stop(
-        "The following training predictors are missing from `test@data`: ",
-        paste(missing_test, collapse = ", ")
-      )
+    if (anyNA(pa) || !all(pa %in% c(0, 1))) {
+      fail("`", name, "@pa` must contain only 0 and 1 without NA values.")
     }
-
-    test_data <- test_data[, vars, drop = FALSE]
+    if (is.null(vars)) {
+      vars <- names(x)
+      if (!length(vars) || anyDuplicated(vars)) {
+        fail("`train@data` must have non-empty, unique predictor names.")
+      }
+    } else {
+      missing <- setdiff(vars, names(x))
+      if (length(missing)) {
+        fail("Predictors missing from `", name, "@data`: ",
+             paste(missing, collapse = ", "))
+      }
+      x <- x[, vars, drop = FALSE]
+    }
+    numeric_cols <- vapply(x, is.numeric, logical(1))
+    if (!all(numeric_cols)) {
+      fail("Non-numeric predictors in `", name, "@data`: ",
+           paste(names(x)[!numeric_cols], collapse = ", "))
+    }
+    list(data = x, pa = pa, vars = vars)
   }
-
-  # ---- Helper for one variance check ----
-
-  check_variance <- function(x, check, subset) {
-
-    x <- as.data.frame(x)[, vars, drop = FALSE]
-
-    n_finite <- vapply(
-      x,
-      function(z) sum(is.finite(z)),
-      integer(1)
-    )
-
-    sds <- vapply(
-      x,
-      function(z) {
-
-        z <- z[is.finite(z)]
-
-        if (length(z) < 2L) {
-          return(NA_real_)
-        }
-
-        stats::sd(z)
-      },
-      numeric(1)
-    )
-
-    failed <- n_finite < 2L |
-      !is.finite(sds) |
-      sds <= sd_tol
-
-    reason <- ifelse(
-      n_finite < 2L,
-      "fewer_than_2_finite_values",
-      ifelse(
-        !is.finite(sds),
-        "undefined_sd",
-        ifelse(
-          sds <= sd_tol,
-          "sd_below_or_equal_to_tolerance",
-          "passed"
-        )
-      )
-    )
-
-    data.frame(
-      check = check,
-      subset = subset,
-      variable = vars,
-      n_finite = n_finite,
-      sd = sds,
-      failed = failed,
-      reason = reason,
-      row.names = NULL,
-      stringsAsFactors = FALSE
-    )
+  tr <- extract(train, "train")
+  vars <- tr$vars
+  te <- if (!is.null(test)) extract(test, "test", vars) else NULL
+  train_p <- tr$data[tr$pa == 1, , drop = FALSE]
+  train_b <- tr$data[tr$pa == 0, , drop = FALSE]
+  if (!nrow(train_p) || !nrow(train_b)) {
+    fail("`train` must contain both presence and background records.")
+  }
+  if (!is.null(occ_folds)) {
+    if (length(occ_folds) != nrow(train_p) || anyNA(occ_folds) ||
+        !(is.numeric(occ_folds) || is.character(occ_folds) || is.factor(occ_folds))) {
+      fail("`occ_folds` must provide one non-missing numeric or character fold ",
+           "identifier per training presence.")
+    }
+    folds <- unique(as.character(occ_folds))
+    if (length(folds) < 2L) fail("`occ_folds` must contain at least two folds.")
+    occ_folds <- as.character(occ_folds)
+    if (!is.null(bg_folds)) {
+      if (length(bg_folds) != nrow(train_b) || anyNA(bg_folds) ||
+          !(is.numeric(bg_folds) || is.character(bg_folds) || is.factor(bg_folds))) {
+        fail("`bg_folds` must provide one non-missing numeric or character fold ",
+             "identifier per training background record.")
+      }
+      bg_folds <- as.character(bg_folds)
+      if (!all(bg_folds %in% folds)) {
+        fail("All `bg_folds` identifiers must occur in `occ_folds`.")
+      }
+    }
   }
 
   diagnostics <- list()
-
-  # ---- Complete training data ----
-
-  diagnostics[[length(diagnostics) + 1L]] <- check_variance(
-    train_data,
-    check = "training",
-    subset = "all"
-  )
-
-  # ---- Training presences ----
-
-  pres_idx <- train_pa == 1
-
-  if (!any(pres_idx)) {
-    stop("No presence records were found in `train`.")
+  check_one <- function(x, check, subset, data_source, group, fold = NA_character_,
+                        select = TRUE) {
+    n_finite <- vapply(x, function(z) sum(is.finite(z)), integer(1))
+    sds <- vapply(x, function(z) {
+      z <- z[is.finite(z)]
+      if (length(z) < 2L) return(NA_real_)
+      stats::sd(z)
+    }, numeric(1))
+    failed <- n_finite < 2L | !is.finite(sds) | sds <= sd_tol
+    reason <- rep("passed", length(vars))
+    reason[n_finite < 2L] <- "fewer_than_2_finite_values"
+    reason[n_finite >= 2L & !is.finite(sds)] <- "undefined_sd"
+    reason[n_finite >= 2L & is.finite(sds) & sds <= sd_tol] <-
+      "sd_below_or_equal_to_tolerance"
+    diagnostics[[length(diagnostics) + 1L]] <<- data.frame(
+      check = check, subset = subset, data_source = data_source,
+      group = group, fold = fold, used_for_selection = select,
+      variable = vars, n_finite = n_finite, sd = sds,
+      failed = failed, reason = reason, row.names = NULL,
+      stringsAsFactors = FALSE
+    )
   }
-
-  pres_data <- train_data[pres_idx, , drop = FALSE]
-
-  diagnostics[[length(diagnostics) + 1L]] <- check_variance(
-    pres_data,
-    check = "training",
-    subset = "presences"
-  )
-
-  # ---- Background data ----
-
-  bg_idx <- train_pa == 0
-
-  bg_data <- train_data[bg_idx, , drop = FALSE]
-  bg_subset <- "training"
-
-  if (!is.null(test) && isTRUE(include_test_bg)) {
-
-    test_bg <- test_data[test_pa == 0, , drop = FALSE]
-
-    if (nrow(test_bg) > 0L) {
-      bg_data <- rbind(bg_data, test_bg)
-      bg_subset <- "training + independent_test"
-    }
-  }
-
-  if (nrow(bg_data) == 0L) {
-    stop("No absence/background records were available for checking.")
-  }
-
-  diagnostics[[length(diagnostics) + 1L]] <- check_variance(
-    bg_data,
-    check = "background",
-    subset = bg_subset
-  )
-
-  # ---- Independent testing data ----
-
-  if (isTRUE(check_test)) {
-
-    if (is.null(test)) {
-      stop("`check_test = TRUE` requires a `test` SWD object.")
-    }
-
-    diagnostics[[length(diagnostics) + 1L]] <- check_variance(
-      test_data,
-      check = "independent_test",
-      subset = "all"
+  check_groups <- function(p, b, check, subset, data_source,
+                           fold = NA_character_, select = TRUE) {
+    if (check_presences) check_one(
+      p, check, subset, data_source, "presences", fold,
+      select && presence_affects_selection
+    )
+    if (check_background) check_one(
+      b, check, subset, data_source, "background", fold, select
+    )
+    if (check_combined) check_one(
+      rbind(p, b), check, subset, data_source, "combined", fold, select
     )
   }
 
-  # ---- Cross-validation training partitions ----
-
+  check_groups(train_p, train_b, "training", "all", "training")
   if (!is.null(occ_folds)) {
-
-    if (length(occ_folds) != nrow(pres_data)) {
-      stop(
-        "`occ_folds` must have one value for each presence record in `train`."
-      )
-    }
-
-    if (anyNA(occ_folds)) {
-      stop("`occ_folds` must not contain missing values.")
-    }
-
-    fold_ids <- sort(unique(occ_folds))
-
-    if (length(fold_ids) < 2L) {
-      stop("`occ_folds` must contain at least two different folds.")
-    }
-
-    for (k in fold_ids) {
-
-      train_idx <- occ_folds != k
-
-      diagnostics[[length(diagnostics) + 1L]] <- check_variance(
-        pres_data[train_idx, , drop = FALSE],
-        check = "cv_training_presences",
-        subset = paste0("held_out_fold_", k)
-      )
+    for (k in folds) {
+      p <- train_p[occ_folds != k, , drop = FALSE]
+      b <- if (is.null(bg_folds)) train_b else
+        train_b[bg_folds != k, , drop = FALSE]
+      check_groups(p, b, "cv_training", paste0(
+        "held_out_fold_", k,
+        if (is.null(bg_folds)) "_shared_background" else ""
+      ), "training", fold = k)
     }
   }
-
-  # ---- Environmental-domain sample ----
-
+  if (!is.null(te)) {
+    test_p <- te$data[te$pa == 1, , drop = FALSE]
+    test_b <- te$data[te$pa == 0, , drop = FALSE]
+    if (check_test) {
+      check_groups(test_p, test_b, "independent_test", "all",
+                   "independent_test", select = test_affects_selection)
+    }
+    if (include_test_bg) {
+      check_one(rbind(train_b, test_b), "pooled_background",
+                "training_plus_independent_test", "training_plus_independent_test",
+                "background", select = test_affects_selection)
+    }
+  }
   if (!is.null(env)) {
-
     if (!inherits(env, "SpatRaster")) {
-      stop("`env` must be a terra `SpatRaster` or NULL.")
+      fail("`env` must be a terra `SpatRaster` or NULL.")
     }
-
-    missing_env <- setdiff(vars, names(env))
-
-    if (length(missing_env) > 0L) {
-      stop(
-        "The following training predictors are missing from `env`: ",
-        paste(missing_env, collapse = ", ")
-      )
+    missing <- setdiff(vars, names(env))
+    if (length(missing)) {
+      fail("Predictors missing from `env`: ", paste(missing, collapse = ", "))
     }
-
-    env_use <- env[[vars]]
-
-    sample_env <- function() {
-      terra::spatSample(
-        env_use,
-        size = env_sample_n,
-        method = "random",
-        na.rm = TRUE,
-        values = TRUE,
-        xy = FALSE,
-        as.df = TRUE
-      )
-    }
-
+    sample_env <- function() terra::spatSample(
+      env[[vars]], size = env_sample_n, method = "random", na.rm = TRUE,
+      values = TRUE, xy = FALSE, as.df = TRUE
+    )
     if (is.null(seed)) {
-
       env_values <- sample_env()
-
     } else {
-
-      had_seed <- exists(
-        ".Random.seed",
-        envir = .GlobalEnv,
-        inherits = FALSE
-      )
-
-      if (had_seed) {
-        old_seed <- get(
-          ".Random.seed",
-          envir = .GlobalEnv,
-          inherits = FALSE
-        )
-      }
-
-      on.exit(
-        {
-          if (had_seed) {
-            assign(
-              ".Random.seed",
-              old_seed,
-              envir = .GlobalEnv
-            )
-          } else if (exists(
-            ".Random.seed",
-            envir = .GlobalEnv,
-            inherits = FALSE
-          )) {
-            rm(".Random.seed", envir = .GlobalEnv)
-          }
-        },
-        add = TRUE
-      )
-
+      had_seed <- exists(".Random.seed", envir = .GlobalEnv, inherits = FALSE)
+      if (had_seed) old_seed <- get(".Random.seed", envir = .GlobalEnv)
+      on.exit({
+        if (had_seed) {
+          assign(".Random.seed", old_seed, envir = .GlobalEnv)
+        } else if (exists(".Random.seed", envir = .GlobalEnv,
+                          inherits = FALSE)) {
+          rm(".Random.seed", envir = .GlobalEnv)
+        }
+      }, add = TRUE)
       set.seed(seed)
       env_values <- sample_env()
     }
-
-    env_values <- env_values[, vars, drop = FALSE]
-
-    diagnostics[[length(diagnostics) + 1L]] <- check_variance(
-      env_values,
-      check = "environment",
-      subset = "random_sample"
-    )
+    env_values <- as.data.frame(env_values)[, vars, drop = FALSE]
+    check_one(env_values, "environment", "random_sample",
+              "environment", "environment")
   }
-
-  # ---- Combine results ----
-
   diagnostics <- do.call(rbind, diagnostics)
-
-  bad_rows <- diagnostics[
-    diagnostics$failed,
-    ,
-    drop = FALSE
-  ]
-
-  remove <- unique(bad_rows$variable)
-  keep <- setdiff(vars, remove)
-
-  if (nrow(bad_rows) > 0L) {
-
-    check_names <- paste(
-      bad_rows$check,
-      bad_rows$subset,
-      sep = ": "
-    )
-
-    removed_by_check <- split(
-      bad_rows$variable,
-      check_names
-    )
-
-    removed_by_check <- lapply(
-      removed_by_check,
-      unique
-    )
-
+  bad <- diagnostics[diagnostics$failed & diagnostics$used_for_selection,
+                     , drop = FALSE]
+  remove <- vars[vars %in% bad$variable]
+  keep <- vars[!vars %in% remove]
+  if (nrow(bad)) {
+    keys <- paste(bad$check, bad$subset, bad$group, sep = ": ")
+    removed_by_check <- lapply(split(bad$variable, keys), unique)
   } else {
-
     removed_by_check <- list()
   }
-
-  if (isTRUE(verbose)) {
-
-    message(
-      "Predictors checked: ", length(vars),
-      "; retained: ", length(keep),
-      "; removed: ", length(remove), "."
-    )
-
-    if (length(remove) > 0L) {
-      message(
-        "Removed predictors: ",
-        paste(remove, collapse = ", ")
-      )
-    }
+  if (verbose) {
+    message("Predictors checked: ", length(vars), "; retained: ",
+            length(keep), "; removed: ", length(remove), ".")
+    if (length(remove)) message("Removed predictors: ", paste(remove, collapse = ", "))
   }
-
-  list(
-    keep = keep,
-    remove = remove,
-    removed_by_check = removed_by_check,
-    diagnostics = diagnostics
-  )
+  list(keep = keep, remove = remove, removed_by_check = removed_by_check,
+       diagnostics = diagnostics)
 }

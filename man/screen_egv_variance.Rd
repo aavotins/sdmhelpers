@@ -2,164 +2,137 @@
 % Please edit documentation in R/screen_egv_variance.R
 \name{screen_egv_variance}
 \alias{screen_egv_variance}
-\title{Screen Environmental Predictors for Zero Variance}
+\title{Screen environmental predictors for insufficient variance}
 \usage{
 screen_egv_variance(
   train,
   test = NULL,
   occ_folds = NULL,
+  bg_folds = NULL,
   env = NULL,
   env_sample_n = 10000L,
   seed = NULL,
   sd_tol = 0,
-  include_test_bg = TRUE,
+  check_presences = TRUE,
+  check_background = TRUE,
+  check_combined = TRUE,
+  presence_affects_selection = TRUE,
+  include_test_bg = FALSE,
   check_test = FALSE,
+  test_affects_selection = FALSE,
   verbose = TRUE
 )
 }
 \arguments{
-\item{train}{An \code{SWD} object, typically created with
-\code{\link[SDMtune:prepareSWD]{SDMtune::prepareSWD()}}, containing the training presence and
-absence/background records.}
+\item{train}{An \code{SDMtune} \code{SWD} object with presence and background data.}
 
-\item{test}{An optional \code{SWD} object containing independent testing data.
-When supplied, its background records can be included in the pooled
-background variance check. The complete independent testing dataset can
-additionally be checked by setting \code{check_test = TRUE}.}
+\item{test}{An optional independent-test \code{SWD} object.}
 
-\item{occ_folds}{An optional vector giving the cross-validation fold assigned
-to each presence record in \code{train}. Its length must equal the number of
-presence records in \code{train}. For each fold, predictor variance is evaluated
-using the presence records belonging to all other folds, corresponding to
-the training partition when that fold is held out.}
+\item{occ_folds}{An optional fold identifiers for TRAINING presences, in the
+order of \code{train@pa == 1}. A held-out fold is excluded in each CV check.}
 
-\item{env}{An optional \link[terra:SpatRaster]{terra::SpatRaster} containing the environmental
-predictors. When supplied, \code{env_sample_n} random raster cells are sampled
-and predictor variance is evaluated across the sampled environmental
-domain.}
+\item{bg_folds}{An optional fold identifiers for TRAINING background records,
+in the order of \code{train@pa == 0}. If omitted, all training backgrounds are
+reused in every CV partition (and the diagnostics state this explicitly).}
 
-\item{env_sample_n}{Positive integer. Number of cells randomly sampled from
-\code{env} when \code{env} is supplied. Defaults to \code{10000}.}
+\item{env}{An optional \code{terra::SpatRaster} representing the environmental domain.}
 
-\item{seed}{Optional integer used for reproducible sampling of \code{env}.
-The previous state of R's random-number generator is restored before the
-function exits.}
+\item{env_sample_n}{Whole integer >= 2 for random raster-cell sampling.}
 
-\item{sd_tol}{Non-negative numeric value defining the minimum acceptable
-standard deviation. A predictor is flagged when its standard deviation is
-less than or equal to \code{sd_tol}. The default, \code{0}, removes only predictors
-with exactly zero variance, together with predictors for which variance
-cannot be estimated.}
+\item{seed}{NULL or one non-negative integer for reproducible \code{env} sampling;
+existing R random-number-generator state is restored.}
 
-\item{include_test_bg}{Logical. If \code{TRUE} and \code{test} is supplied,
-background records from the independent testing dataset are pooled with
-training background records for the background variance check. Defaults
-to \code{TRUE}.}
+\item{sd_tol}{Finite non-negative standard-deviation cutoff. Values <=
+\code{sd_tol}, or fewer than two finite observations, fail a check.}
 
-\item{check_test}{Logical. If \code{TRUE}, predictor variance is additionally
-evaluated across all records in the independent testing \code{SWD} object.
-Defaults to \code{FALSE}.}
+\item{check_presences}{Check presence-only subsets, default TRUE.}
 
-\item{verbose}{Logical. If \code{TRUE}, print a short summary of the screening
-results. Defaults to \code{TRUE}.}
+\item{check_background}{Check background-only subsets, default TRUE.}
+
+\item{check_combined}{Check joined presence/background subsets, default TRUE.}
+
+\item{presence_affects_selection}{If FALSE, presence-only failures are
+diagnostic-only. Defaults to TRUE for compatibility with previous screening.}
+
+\item{include_test_bg}{Whether to additionally check training and independent
+test backgrounds pooled together. Defaults to FALSE. The pooled check is
+diagnostic-only unless \code{test_affects_selection = TRUE}.}
+
+\item{check_test}{Whether to diagnose the independent test set separately
+(presences/background/combined according to the \verb{check_*} switches).
+Defaults to FALSE. Its checks are diagnostic-only by default.}
+
+\item{test_affects_selection}{Explicitly allow checks involving independent
+test records to influence \code{keep}/\code{remove}. Defaults to FALSE to avoid
+test-informed preprocessing. Setting TRUE forfeits full test independence.}
+
+\item{verbose}{Print a summary (TRUE/FALSE).}
 }
 \value{
-A named list with the following components:
-
+A named list containing:
 \describe{
-\item{keep}{
-Character vector containing predictors that passed all requested
-variance checks.
-}
-\item{remove}{
-Character vector containing predictors that failed at least one
-variance check.
-}
-\item{removed_by_check}{
-Named list showing which predictors were flagged by each individual
-check.
-}
-\item{diagnostics}{
-A \code{data.frame} containing the check, subset, predictor name, number of
-finite observations, standard deviation, failure status, and reason for
-every predictor evaluated.
-}
+\item{keep}{Predictors retained after variance screening.}
+\item{remove}{Predictors excluded by selection-relevant variance checks.}
+\item{removed_by_check}{Predictors removed by each selection-relevant check.}
+\item{diagnostics}{A data frame containing results of all performed
+variance checks, including \code{failed} and \code{used_for_selection} logical
+columns. The latter identifies whether each check contributes to
+predictor selection.}
 }
 }
 \description{
-Identifies environmental predictors that have zero or insufficient variance
-in data subsets relevant to species distribution model training,
-cross-validation, background characterization, and optionally independent
-testing.
+Calculates predictor standard deviations separately among presences,
+background records, and their combination, including spatial CV training
+partitions and (optionally) an independent test set.
 }
 \details{
-The function is intended as a preprocessing check for environmental
-predictors used in species distribution modelling. A predictor is retained
-only when it passes every variance check that is requested.
+Checks performed on training observations use only \code{train@data}.
+Supplying \code{env} adds an independent random environmental-domain check; it
+does not subsample or modify the supplied background observations.
 
-By default, the following subsets are evaluated:
+CV checks exclude the held-out fold's presences and, when \code{bg_folds} is
+supplied, its background records. Without \code{bg_folds}, the full training
+background is shared across CV partitions. CV checks never inspect \code{test}.
 
-\itemize{
-\item all presence and absence/background records in the training data;
-\item all training presence records;
-\item pooled training background records and, when \code{include_test_bg = TRUE},
-independent testing background records;
-\item each cross-validation presence training partition when
-\code{occ_folds} is supplied; and
-\item a random sample of the environmental domain when \code{env} is supplied.
-}
+When \code{check_presences = FALSE}, presence-only checks are omitted entirely.
+When \code{presence_affects_selection = FALSE}, presence-only checks are
+performed but do not influence predictor selection.
 
-For the cross-validation check, the function does not evaluate the records
-within a held-out fold alone. For each fold \code{k}, it evaluates the records for
-which \code{occ_folds != k}. These are the presence records available for model
-fitting when fold \code{k} is used for validation.
+Each row in the returned \code{diagnostics} data frame contains a logical
+column named \code{used_for_selection}. This column indicates whether the
+corresponding variance check contributes to predictor selection.
+A predictor is included in \code{remove} if it fails at least one check
+for which \code{used_for_selection} is \code{TRUE}. Checks marked \code{FALSE} are
+retained for diagnostic purposes but do not influence \code{keep} or \code{remove}.
 
-If \code{check_test = TRUE}, all records in \code{test} are also evaluated as a
-separate subset.
-
-Standard deviations are calculated using finite values only. Predictors
-having fewer than two finite observations in a checked subset are flagged
-because their variance cannot be estimated.
-
-Predictor names are taken from \code{train@data}. The same predictors must be
-present in \code{test@data}, when \code{test} is supplied, and in \code{env}, when \code{env}
-is supplied.
-
-The environmental raster itself is not modified. Instead, the function
-returns vectors containing the predictors that passed and failed screening.
-These can subsequently be used to subset an environmental-variable table,
-an \code{SWD} object, or a \link[terra:SpatRaster]{terra::SpatRaster}.
+\code{test_affects_selection = TRUE} is an explicit opt-in and is generally
+inappropriate if \code{test} is meant as a final independent evaluation set.
+Select predictors \emph{within training data for each CV fold} if estimating
+the predictive performance of an entire selection/model-fitting pipeline.
 }
 \examples{
-\dontrun{
-result <- screen_egv_variance(
-  train = trenin_dati,
-  test = testa_dati,
-  occ_folds = block_folds$occs.grp,
-  env = vide,
-  env_sample_n = 10000,
-  seed = 1
-)
-
+# Self-contained example with package dependencies, no external files.
+r <- terra::rast(nrows = 10, ncols = 10, xmin = 0, xmax = 10,
+                 ymin = 0, ymax = 10)
+terra::values(r) <- seq_len(terra::ncell(r))
+names(r) <- "gradient"
+r2 <- r
+terra::values(r2) <- rep(seq_len(10), each = 10)
+names(r2) <- "stripes"
+env <- c(r, r2)
+p <- data.frame(x = c(1.5, 3.5, 5.5, 7.5),
+                y = c(1.5, 3.5, 5.5, 7.5))
+a <- data.frame(x = c(0.5, 2.5, 4.5, 6.5, 8.5),
+                y = c(8.5, 6.5, 4.5, 2.5, 0.5))
+train <- SDMtune::prepareSWD("Example species", env, p = p, a = a,
+                             verbose = FALSE)
+result <- screen_egv_variance(train, occ_folds = c(1, 1, 2, 2),
+                              env = env, env_sample_n = 50,
+                              seed = 1, verbose = FALSE)
 result$keep
-result$remove
-result$removed_by_check
-
-# Retain only predictors passing all checks
-videi <- videi[
-  videi$layername \%in\% result$keep,
-]
-
-vide <- terra::rast(
-  paste0(
-    "./RasterGrids_100m/2024/Scaled/",
-    videi$new_filename
-  )
-)
-}
+head(result$diagnostics)
 
 }
 \seealso{
-\code{\link[SDMtune:prepareSWD]{SDMtune::prepareSWD()}},
-\code{\link[terra:spatSample]{terra::spatSample()}}
+\code{\link[SDMtune:prepareSWD]{SDMtune::prepareSWD()}}, \code{\link[terra:spatSample]{terra::spatSample()}}
 }
